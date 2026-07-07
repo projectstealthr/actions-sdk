@@ -22,3 +22,10 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+
+# build caches
+*.tsbuildinfo
+coverage
+
+# macOS
+.DS_Store
