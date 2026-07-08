@@ -2,13 +2,7 @@ import { defineAction } from '../../core/action';
 import { cursorInBody, paginate } from '../../core/http/pagination';
 import type { QueryValue } from '../../core/http/types';
 import { number } from '../../core/props';
-import {
-  ASANA_API_BASE,
-  type AsanaResource,
-  asanaAuth,
-  resolveWorkspaceGid,
-  workspaceProp,
-} from './common';
+import { ASANA_API_BASE, type AsanaResource, asanaAuth, resolveWorkspaceGid, workspaceProp } from './common';
 
 /** Coined clean id — AP ships no Asana "list projects" action, so this is a new underscore id. */
 export const LIST_PROJECTS_TYPE = 'asana.list_projects';
