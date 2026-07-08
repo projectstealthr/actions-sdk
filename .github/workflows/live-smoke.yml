@@ -1,0 +1,32 @@
+name: live-smoke
+
+# Early-warning monitor for the owned action library: runs the READ-ONLY live
+# specs against the connected sandbox accounts on a schedule, so an upstream API
+# deprecation/shape-change surfaces as a red build before a customer hits it.
+# See docs/verification-queue.md + the actions-sdk maintenance strategy.
+
+on:
+  schedule:
+    - cron: '0 7 * * *' # daily, 07:00 UTC
+  workflow_dispatch: {} # manual "run now"
+
+concurrency:
+  group: live-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run live-smoke monitor
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+        run: node scripts/live-smoke-monitor.mjs
