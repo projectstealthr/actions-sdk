@@ -220,3 +220,16 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **`picker-blocked`:** assignee/group pickers need `subdomain` (a prop) → number/
   text inputs for now.
 - **Catalog note:** registered in its own `index.ts` (`zendeskActions`).
+
+### hubspot — PENDING (6 actions, live owner picker)
+
+- **Actions:** `create_contact`, `get_contact`, `update_contact`,
+  `list_contacts`, `search_contacts`, `list_owners`. CRM v3, fixed base
+  `api.hubapi.com`, JSON (writes work); `paging.next.after` cursor pagination.
+- **Auth:** OAuth / private-app token as Bearer.
+- **Live picker (works today):** owner picker (independent) on `create_contact`.
+- **Offline:** `src/actions/hubspot/hubspot.spec.ts` (5 golden cases incl. the
+  `{ properties }` write shape, cursor pagination, filterGroups search, owner picker).
+- **Smoke (read, benign):** `list_owners` (no props) — also exercises the picker.
+- **Connection needed:** HubSpot — Composio toolkit `hubspot`, managed OAUTH2.
+- **Catalog note:** registered in its own `index.ts` (`hubspotActions`).
