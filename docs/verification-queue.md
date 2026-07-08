@@ -173,3 +173,20 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   text inputs for now.
 - **Catalog note:** registered in its own `index.ts` (`salesforceActions`);
   top-level aggregation deferred.
+
+### intercom — PENDING (6 actions, live admin picker)
+
+- **Actions:** `list_contacts`, `get_contact`, `create_contact`,
+  `search_contacts`, `list_conversations`, `list_admins`. Fixed base
+  `api.intercom.io`, JSON. Pins `Intercom-Version: 2.11`; cursor pagination via
+  `pages.next.starting_after`.
+- **Auth:** access token as Bearer (BYO paste or managed OAuth). The matrix
+  "transport gap" was the vendored `intercom-client` SDK bypassing the sentinel —
+  not relevant to this clean-room REST client.
+- **Live picker (works today):** owner/admin picker (independent) on
+  `create_contact`.
+- **Offline:** `src/actions/intercom/intercom.spec.ts` (6 golden cases incl.
+  cursor pagination, the search DSL, and the admin picker).
+- **Smoke (read, benign):** `list_admins` (no props) — also exercises the picker.
+- **Connection needed:** Intercom — Composio toolkit `intercom`, managed OAUTH2.
+- **Catalog note:** registered in its own `index.ts` (`intercomActions`).
