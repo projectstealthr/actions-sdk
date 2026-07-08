@@ -9,13 +9,22 @@
  */
 export * as slack from './slack';
 export * as github from './github';
+export * as jira from './jira';
 
 import { newChannel, newMessage } from './slack';
 import { listChannels, sendChannelMessage } from './slack';
 import { listIssues } from './github';
+import { jiraActions } from './jira';
 
 /** Every reference action, for catalog builds and registration. */
 export const referenceActions = [sendChannelMessage, listChannels, listIssues] as const;
 
 /** Every reference trigger. */
 export const referenceTriggers = [newMessage, newChannel] as const;
+
+/**
+ * The full clean-room catalog — every app's actions, flattened for catalog
+ * builds and provider registration. Grows app-by-app as the SDK scales beyond
+ * the reference set.
+ */
+export const catalogActions = [sendChannelMessage, listChannels, listIssues, ...jiraActions];

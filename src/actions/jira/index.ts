@@ -1,0 +1,28 @@
+export { jiraAuth, jiraBaseUrl, textToAdf } from './common';
+export {
+  CREATE_ISSUE_TYPE,
+  createIssue,
+  GET_ISSUE_TYPE,
+  getIssue,
+  type JiraIssue,
+  type JiraIssueRef,
+  type JiraSearchResult,
+  SEARCH_ISSUES_TYPE,
+  searchIssues,
+  UPDATE_ISSUE_TYPE,
+  updateIssue,
+} from './issues';
+export { ADD_COMMENT_TYPE, addComment, type JiraComment, LIST_COMMENTS_TYPE, listComments } from './comments';
+
+import { addComment, listComments } from './comments';
+import { createIssue, getIssue, searchIssues, updateIssue } from './issues';
+
+/** Every Jira action, for catalog builds and registration. */
+export const jiraActions = [
+  createIssue,
+  getIssue,
+  updateIssue,
+  searchIssues,
+  addComment,
+  listComments,
+] as const;
