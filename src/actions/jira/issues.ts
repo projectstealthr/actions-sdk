@@ -1,7 +1,8 @@
 import { defineAction } from '../../core/action';
+import { cursorInBody, paginate } from '../../core/http/pagination';
 import type { JsonValue } from '../../core/http/types';
 import { dropdown, json, longText, number, shortText } from '../../core/props';
-import { instanceUrlProp, jiraAuth, jiraBaseUrl, namedRef, projectRef, textToAdf } from './common';
+import { instanceUrlProp, jiraAuth, namedRef, projectRef, resolveJiraBase, textToAdf } from './common';
 
 /** Public types — stable across the AP→ours upgrade. */
 export const CREATE_ISSUE_TYPE = 'jira.create_issue';
@@ -24,12 +25,31 @@ export interface JiraIssueRef {
   self: string;
 }
 
-/** The `POST /search/jql` response envelope. */
-export interface JiraSearchResult {
+/** One page of the token-paginated `GET /search/jql` — `nextPageToken` is absent on the last page. */
+export interface JiraSearchPage {
   issues: JiraIssue[];
   nextPageToken?: string;
   isLast?: boolean;
 }
+
+/** The `search_issues` result: the collected issues plus their count. */
+export interface JiraSearchResult {
+  issues: JiraIssue[];
+  count: number;
+}
+
+/**
+ * Default fields to request from `/search/jql`. The endpoint requires an explicit
+ * `fields` param (unlike the retired `/search`, which defaulted to all navigable
+ * fields), so we ask for a workflow-useful core; callers override via the `fields` prop.
+ */
+const DEFAULT_SEARCH_FIELDS = ['summary', 'status', 'assignee', 'created'];
+
+/**
+ * Advance `/search/jql`: the next-page cursor lives at `nextPageToken` in the body
+ * and rides back as `?nextPageToken=` on the same URL (absent → last page → stop).
+ */
+const searchNextPage = cursorInBody({ cursorPath: ['nextPageToken'], cursorParam: 'nextPageToken' });
 
 /** Assemble the `fields` object shared by create and update from the common typed props. */
 function buildFields(input: {
@@ -101,6 +121,7 @@ export const createIssue = defineAction({
     }),
   },
   async run({ auth, props, http }): Promise<JiraIssueRef> {
+    const base = await resolveJiraBase(http, auth, props.instanceUrl);
     const fields: Record<string, JsonValue> = {
       project: projectRef(props.project),
       ...buildFields({
@@ -113,7 +134,7 @@ export const createIssue = defineAction({
         ...(props.additionalFields !== undefined ? { additionalFields: props.additionalFields } : {}),
       }),
     };
-    const res = await http.post<JiraIssueRef>(`${jiraBaseUrl(props.instanceUrl)}/issue`, {
+    const res = await http.post<JiraIssueRef>(`${base}/issue`, {
       auth,
       body: { fields },
     });
@@ -143,10 +164,11 @@ export const getIssue = defineAction({
     }),
   },
   async run({ auth, props, http }): Promise<JiraIssue> {
-    const res = await http.get<JiraIssue>(
-      `${jiraBaseUrl(props.instanceUrl)}/issue/${encodeURIComponent(props.issueIdOrKey)}`,
-      { auth, query: { expand: props.expand } },
-    );
+    const base = await resolveJiraBase(http, auth, props.instanceUrl);
+    const res = await http.get<JiraIssue>(`${base}/issue/${encodeURIComponent(props.issueIdOrKey)}`, {
+      auth,
+      query: { expand: props.expand },
+    });
     return res.data;
   },
 });
@@ -175,6 +197,7 @@ export const updateIssue = defineAction({
     }),
   },
   async run({ auth, props, http }): Promise<JiraIssue> {
+    const base = await resolveJiraBase(http, auth, props.instanceUrl);
     const fields = buildFields({
       ...(props.summary !== undefined ? { summary: props.summary } : {}),
       ...(props.issueType !== undefined ? { issueType: props.issueType } : {}),
@@ -183,17 +206,21 @@ export const updateIssue = defineAction({
       ...(props.priority !== undefined ? { priority: props.priority } : {}),
       ...(props.additionalFields !== undefined ? { additionalFields: props.additionalFields } : {}),
     });
-    const res = await http.put<JiraIssue>(
-      `${jiraBaseUrl(props.instanceUrl)}/issue/${encodeURIComponent(props.issueIdOrKey)}`,
-      { auth, query: { returnIssue: true }, body: { fields } },
-    );
+    const res = await http.put<JiraIssue>(`${base}/issue/${encodeURIComponent(props.issueIdOrKey)}`, {
+      auth,
+      query: { returnIssue: true },
+      body: { fields },
+    });
     return res.data;
   },
 });
 
 /**
- * Search issues with JQL via `POST /search/jql`. Returns one page (up to
- * `maxResults`); `nextPageToken` on the result advances to the next page.
+ * Search issues with JQL via `GET /search/jql` (the retired `/search` now 410s).
+ * `/search/jql` uses token pagination — the response carries `{ issues,
+ * nextPageToken? }` — so we walk `nextPageToken` to completion, capped at
+ * `maxResults` issues. The `jql` is passed through verbatim: `/search/jql` rejects
+ * an UNBOUNDED query with 400, so bounding it is the caller's responsibility.
  */
 export const searchIssues = defineAction({
   type: SEARCH_ISSUES_TYPE,
@@ -207,33 +234,38 @@ export const searchIssues = defineAction({
       description: 'e.g. project = ENG AND status = "In Progress" ORDER BY created DESC',
       required: true,
     }),
-    maxResults: number({ label: 'Max results', required: false, defaultValue: 50 }),
+    maxResults: number({
+      label: 'Max results',
+      description: 'Cap on issues returned across pages.',
+      required: false,
+      defaultValue: 50,
+    }),
     fields: shortText({
       label: 'Fields',
-      description: 'Comma-separated field ids to return (default: all navigable).',
-      required: false,
-    }),
-    nextPageToken: shortText({
-      label: 'Next page token',
-      description: 'Token from a prior result page.',
+      description: `Comma-separated field ids to return (default: ${DEFAULT_SEARCH_FIELDS.join(', ')}).`,
       required: false,
     }),
   },
   async run({ auth, props, http }): Promise<JiraSearchResult> {
+    const base = await resolveJiraBase(http, auth, props.instanceUrl);
+    const cap = props.maxResults ?? 50;
     const fieldList = props.fields
       ?.split(',')
       .map((f) => f.trim())
       .filter((f) => f.length > 0);
-    const body: Record<string, JsonValue> = {
-      jql: props.jql,
-      maxResults: props.maxResults ?? 50,
-      fields: fieldList && fieldList.length > 0 ? fieldList : ['*navigable'],
-    };
-    if (props.nextPageToken !== undefined) body.nextPageToken = props.nextPageToken;
-    const res = await http.post<JiraSearchResult>(`${jiraBaseUrl(props.instanceUrl)}/search/jql`, {
+    const issues = await paginate<JiraIssue>({
+      http,
       auth,
-      body,
+      url: `${base}/search/jql`,
+      query: {
+        jql: props.jql,
+        maxResults: cap,
+        fields: (fieldList && fieldList.length > 0 ? fieldList : DEFAULT_SEARCH_FIELDS).join(','),
+      },
+      extractItems: (res) => (res.data as JiraSearchPage)?.issues ?? [],
+      nextPage: searchNextPage,
+      maxItems: cap,
     });
-    return res.data;
+    return { issues, count: issues.length };
   },
 });

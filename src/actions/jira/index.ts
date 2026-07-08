@@ -1,4 +1,4 @@
-export { jiraAuth, jiraBaseUrl, textToAdf } from './common';
+export { type AtlassianResource, jiraAuth, resolveJiraBase, textToAdf } from './common';
 export {
   CREATE_ISSUE_TYPE,
   createIssue,
@@ -6,6 +6,7 @@ export {
   getIssue,
   type JiraIssue,
   type JiraIssueRef,
+  type JiraSearchPage,
   type JiraSearchResult,
   SEARCH_ISSUES_TYPE,
   searchIssues,

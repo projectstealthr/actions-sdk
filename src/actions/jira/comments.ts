@@ -1,7 +1,7 @@
 import { defineAction } from '../../core/action';
 import type { JsonValue } from '../../core/http/types';
 import { checkbox, dropdown, number, shortText } from '../../core/props';
-import { instanceUrlProp, jiraAuth, jiraBaseUrl, textToAdf } from './common';
+import { instanceUrlProp, jiraAuth, resolveJiraBase, textToAdf } from './common';
 
 /** Public types — stable across the AP→ours upgrade. */
 export const ADD_COMMENT_TYPE = 'jira.add_comment';
@@ -46,6 +46,7 @@ export const addComment = defineAction({
     }),
   },
   async run({ auth, props, http }): Promise<JiraComment> {
+    const base = await resolveJiraBase(http, auth, props.instanceUrl);
     let body: JsonValue;
     if (props.isAdf) {
       body = JSON.parse(props.comment) as JsonValue;
@@ -53,7 +54,7 @@ export const addComment = defineAction({
       body = textToAdf(props.comment);
     }
     const res = await http.post<JiraComment>(
-      `${jiraBaseUrl(props.instanceUrl)}/issue/${encodeURIComponent(props.issueIdOrKey)}/comment`,
+      `${base}/issue/${encodeURIComponent(props.issueIdOrKey)}/comment`,
       { auth, body: { body } },
     );
     return res.data;
@@ -81,8 +82,9 @@ export const listComments = defineAction({
     maxResults: number({ label: 'Max results', required: false, defaultValue: 50 }),
   },
   async run({ auth, props, http }): Promise<{ comments: JiraComment[]; total: number }> {
+    const base = await resolveJiraBase(http, auth, props.instanceUrl);
     const res = await http.get<JiraCommentPage>(
-      `${jiraBaseUrl(props.instanceUrl)}/issue/${encodeURIComponent(props.issueIdOrKey)}/comment`,
+      `${base}/issue/${encodeURIComponent(props.issueIdOrKey)}/comment`,
       {
         auth,
         query: {

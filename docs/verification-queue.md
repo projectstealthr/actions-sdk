@@ -51,7 +51,7 @@ command runs READs and self-skips the write until you add the `*_LIVE_WRITE=1` f
 
 | App | Extra env (beyond `<APP>_CONNECTED_ACCOUNT_ID` + Composio) | Write cycle | Cleanup |
 |---|---|---|---|
-| **jira** | `JIRA_INSTANCE_URL` (req, read+write); write: `JIRA_LIVE_WRITE=1` + `JIRA_PROJECT_KEY` (+ opt `JIRA_ISSUE_TYPE`, default Task) | `create_issue` → `get_issue` | **none** — no authored delete + deleting needs elevated perms; issue is **left** and its key logged (guard-rail) |
+| **jira** | none on managed (cloudId resolved from the token; `JIRA_INSTANCE_URL` is direct/BYO-only); write: `JIRA_LIVE_WRITE=1` (auto-discovers a project via `/project/search`) **or** `JIRA_PROJECT_KEY` (+ opt `JIRA_ISSUE_TYPE`, default Task) | `create_issue` → `get_issue` | **none** — no authored delete + deleting needs elevated perms; issue is **left** and its key logged (guard-rail) |
 | **airtable** | write: `AIRTABLE_BASE_ID` + `AIRTABLE_TABLE_ID` (table without required fields) | `create_record` (empty `{}`) → `get_record` → `delete_record` | authored `delete_record` (self-cleaning) |
 | **salesforce** | `SALESFORCE_INSTANCE_URL` (req, read+write; opt `SALESFORCE_API_VERSION`); write: `SALESFORCE_LIVE_WRITE=1` | create `Contact` (LastName only) → `get_record` → `delete_record` | authored `delete_record` (self-cleaning) |
 | **calendly** | — | **read-only** (only write is `cancel` — destructive/irreversible; no create verb) | n/a |
@@ -156,23 +156,43 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 
 ## Apps
 
-### jira — PENDING (6 actions)
+### jira — VERIFIED live (managed, 2026-07-08) (6 actions)
 
 - **Actions:** `create_issue`, `get_issue`, `update_issue`, `search_issues`,
   `add_comment`, `list_comments`.
-- **Auth:** HTTP Basic (email + API token). Base URL is per-site → `instanceUrl`
-  prop on every action. Token: https://id.atlassian.com/manage-profile/security/api-tokens
-- **Offline:** `src/actions/jira/jira.spec.ts` (7 golden cases: ADF shaping,
-  project/issue-type refs, JQL body, returnIssue).
-- **Smoke (read, benign):** `search_issues` with `jql: "ORDER BY created DESC"`,
-  `maxResults: 1` — or `get_issue` on any known key.
-- **Connection needed:** Jira (Atlassian) — Composio toolkit `jira`, managed
-  OAUTH2. Note: managed Atlassian rewrites the base to
-  `api.atlassian.com/ex/jira/<cloudId>`; the direct/BYO rail uses the
-  `instanceUrl` prop as authored. Live smoke should target whichever rail the
-  connection uses.
-- **`picker-blocked`:** project + issue-type pickers (need `instanceUrl` / a
-  `projectId` refresher) — authored as text props for now.
+- **Base resolution (rail-aware).** `resolveJiraBase` GETs Atlassian's
+  `https://api.atlassian.com/oauth/token/accessible-resources` (absolute URL —
+  it routes through the managed proxy) before each action:
+  - **Managed / 3LO OAuth:** returns `[{ id: <cloudId>, url, name, scopes }]` → base
+    is the gateway `https://api.atlassian.com/ex/jira/<cloudId>/rest/api/3` (picking
+    the site matching `instanceUrl` when given, else the first). An OAuth token
+    against the bare site URL 401s — this round-trip is what fixes that.
+  - **Direct / BYO (HTTP-Basic):** `accessible-resources` is OAuth-only → 401 →
+    falls back to `${instanceUrl}/rest/api/3`. `instanceUrl` is therefore optional
+    (required only for a direct/BYO connection; ignored on managed).
+- **`search_issues` migrated to `/search/jql`.** The old `GET /rest/api/3/search`
+  now 410s. `/search/jql` requires an explicit `fields` param (default
+  `summary,status,assignee,created`; overridable) and uses **token pagination**
+  (`{ issues, nextPageToken? }`, advance with `?nextPageToken=`). The action walks
+  the cursor via the SDK `paginate`, caps at `maxResults`, and returns
+  `{ issues, count }`. JQL is passed through verbatim — `/search/jql` 400s an
+  UNBOUNDED query, so bounding it is the caller's job.
+- **Offline:** `src/actions/jira/jira.spec.ts` (9 golden cases: gateway base on the
+  managed rail, direct-rail fallback, ADF shaping, project/issue-type refs, the
+  `/search/jql` `nextPageToken` walk + `maxResults` cap, returnIssue).
+- **Live (verified 2026-07-08, `ca_HX2FFl11tMVo`, site `orchestrflow.atlassian.net`,
+  cloudId `b828af84-c9db-4ac5-bc7d-a07b26422193`):** read smoke `search_issues`
+  with a BOUNDED JQL (`created >= "2000-01-01" ORDER BY created DESC`, 1 result) via
+  the gateway; write cycle `create_issue` → `get_issue` (project discovered live via
+  `GET /rest/api/3/project/search`) created `KAN-4`, left in place. Run:
+  ```bash
+  export COMPOSIO_API_KEY="$(grep -E '^COMPOSIO_API_KEY=' ../workflow-service/.env | cut -d= -f2- | tr -d '\"[:space:]')"
+  ORCHESTR_LIVE=1 JIRA_CONNECTED_ACCOUNT_ID=ca_HX2FFl11tMVo JIRA_LIVE_WRITE=1 \
+    npx jest src/actions/jira/jira.live.spec.ts
+  ```
+  (drop `JIRA_LIVE_WRITE=1` for read-only; on managed no `JIRA_INSTANCE_URL` needed.)
+- **`picker-blocked`:** project + issue-type pickers (need a `projectId` refresher) —
+  authored as text props for now.
 
 ### linear — PENDING (6 actions, 2 live pickers)
 
