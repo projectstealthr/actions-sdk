@@ -30,6 +30,10 @@ export * as calendar from './calendar';
 export * as asana from './asana';
 export * as clickup from './clickup';
 export * as todoist from './todoist';
+export * as dropbox from './dropbox';
+export * as typeform from './typeform';
+export * as zoom from './zoom';
+export * as outlook from './outlook';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
@@ -54,6 +58,10 @@ import { calendarActions } from './calendar';
 import { asanaActions } from './asana';
 import { clickupActions } from './clickup';
 import { todoistActions } from './todoist';
+import { dropboxActions } from './dropbox';
+import { typeformActions } from './typeform';
+import { zoomActions } from './zoom';
+import { outlookActions } from './outlook';
 
 /** Every reference action, for catalog builds and registration. */
 export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
@@ -92,4 +100,8 @@ export const catalogActions = [
   ...asanaActions,
   ...clickupActions,
   ...todoistActions,
+  ...dropboxActions,
+  ...typeformActions,
+  ...zoomActions,
+  ...outlookActions,
 ];

@@ -494,3 +494,130 @@ connection on the shared account yet.
   `DirectCredential`. See **Framework gap #3** above for the precise finding and
   the proposed additive fix. Revisit once the seam gains a query-params credential
   variant (and a Trello connection exists to verify the managed rail).
+
+---
+
+## Scope 4 (Dropbox / Typeform / Zoom / Outlook batch)
+
+Four standard JSON apps (Dropbox v2 RPC, Typeform, Zoom v2, Microsoft Graph mail).
+All ride **both** rails with byte-identical action code, so **none is in
+`MANAGED_BROKEN_APPS`** (they are axios/fetch-based, not gaxios — AP executes the
+un-reimplemented actions fine, so those stay as fallbacks; only our reused-id
+actions replace the matching AP row via the exact-type rule). All **PENDING** —
+the shared Composio account has connections for slack/slides/sheets/drive/gmail/
+github/docs only (checked the service `connections` table for owner
+m.huzefa1993), so there is **no** dropbox/typeform/zoom/outlook connection to run
+against. Each is authored + golden-tested; a turnkey smoke command is below.
+
+**No new framework gap was hit this batch.** The three novel pagination shapes
+(Typeform page-number + `before`-token, Graph `@odata.nextLink`, Dropbox's
+POST-to-a-different-endpoint `list_folder/continue`) all slotted in as new
+`nextPage` builders / a small hand-rolled loop, exactly as FRAMEWORK-NOTES §1
+predicted — no change to `paginate`, `defineAction`, the http client, or the auth
+seam. The Dropbox binary limitation is the already-documented managed-proxy §B
+limitation (surfaced honestly, like drive), not a new gap.
+
+### dropbox — PENDING (5 actions)
+
+- **Actions:** `list_dropbox_folder` (list a folder, continue-cursor paginated),
+  `get_file_metadata`, `create_new_dropbox_folder`, `search_dropbox`,
+  `get_dropbox_file_link` (temporary direct-download URL). API v2 JSON-RPC on
+  `api.dropboxapi.com`. The first four reuse AP's underscore ids (dedup replaces
+  those AP rows); `get_file_metadata` is a clean new id.
+- **FILE/BINARY LIMITATION (surfaced honestly, like drive):** Dropbox splits its
+  API across `api.dropboxapi.com` (JSON RPC — what we cover) and
+  `content.dropboxapi.com` (binary upload/download with a `Dropbox-API-Arg`
+  header). The managed proxy carries JSON only (FRAMEWORK-NOTES §B), so the
+  content endpoints can't ride the managed rail — **metadata/link actions only
+  this batch, no byte upload/download.** `get_dropbox_file_link` returns a
+  short-lived direct URL, the managed-safe way to hand a caller a file's contents.
+- **Auth:** OAuth2 Bearer. Composio toolkit `dropbox`. No live picker — the folder
+  `path` IS the primary input (a root-only picker would mislead), so paths are text.
+- **Offline:** `src/actions/dropbox/dropbox.spec.ts` (7 golden cases incl. the
+  list_folder→continue cursor loop, the limit-stop, and the nested search_v2 /
+  create_folder_v2 envelope unwrapping).
+- **Smoke (read, benign):** `list_dropbox_folder` on the root (path `""`). The
+  create-folder round-trip is gated behind `DROPBOX_LIVE_WRITE=1`.
+- **Connection needed:** Dropbox — Composio toolkit `dropbox`, managed OAUTH2.
+
+  ```bash
+  export DROPBOX_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/dropbox/dropbox.live.spec.ts
+  ```
+
+### typeform — PENDING (4 actions, live form picker)
+
+- **Actions:** `list_forms` (page-number paginated), `get_form`, `list_responses`
+  (by form, `before`-token paginated), `get_form_fields`. Fixed base
+  `api.typeform.com`, JSON. AP ships only `custom_api_call` → all clean new ids.
+- **Auth:** OAuth2 / personal token as Bearer.
+- **Live picker (works today):** form picker (`/forms`) — independent, honours the
+  loader `search` term; used by get_form / get_form_fields / list_responses.
+- **Pagination:** two distinct shapes as new `nextPage` builders — `/forms` walks
+  `page`/`page_count`; `/responses` walks the `before`=last-token cursor (responses
+  are newest-first), stopping on a short page.
+- **Offline:** `src/actions/typeform/typeform.spec.ts` (6 golden cases incl. both
+  pagination shapes + the form picker).
+- **Smoke (read, benign):** `list_forms` (no props) — also exercises the picker.
+- **Connection needed:** Typeform — Composio toolkit `typeform`, managed OAUTH2.
+
+  ```bash
+  export TYPEFORM_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/typeform/typeform.live.spec.ts
+  ```
+
+### zoom — PENDING (5 actions, live host picker)
+
+- **Actions:** `zoom_create_meeting`, `list_meetings` (`next_page_token`
+  cursor), `zoom_find_meeting` (get by id), `zoom_update_meeting` (PATCH, 204 →
+  synthesised confirmation), `delete_meeting` (204 → synthesised). API v2, JSON.
+  create/find/update reuse AP's underscore ids (dedup replaces them);
+  list/delete are clean new ids.
+- **Auth:** OAuth2 Bearer. Fixed base `api.zoom.us/v2`.
+- **Live picker (works today):** host picker (`/users`) — independent; used by
+  create/list. Blank = the connected user (`me`). Requires `user:read:admin`; on a
+  plan without it Zoom 4xxs and the platform degrades the field to free text.
+- **Offline:** `src/actions/zoom/zoom.spec.ts` (7 golden cases incl. the "me"
+  host fallback, `next_page_token` pagination, the 204 update/delete synthesis,
+  and the host picker).
+- **Smoke (read, benign):** `list_meetings` (host defaults to `me`). The
+  create→update→get→delete round-trip is gated behind `ZOOM_LIVE_WRITE=1`.
+- **Connection needed:** Zoom — Composio toolkit `zoom`, managed OAUTH2.
+
+  ```bash
+  export ZOOM_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/zoom/zoom.live.spec.ts
+  ```
+
+### outlook — PENDING (4 actions) — Microsoft Graph mail
+
+- **Actions:** `send_email` (Graph `sendMail`, 202 → synthesised confirmation),
+  `list_messages` (all or folder-scoped; `@odata.nextLink` cursor; `$search` adds
+  the `ConsistencyLevel: eventual` header), `get_message`, `list_folders`
+  (`@odata.nextLink` cursor). Base `graph.microsoft.com/v1.0/me`, JSON. AP's
+  Outlook ids are hyphenated (`send-email`) or camelCase (`findEmail`) → all clean
+  new ids (Outlook is NOT managed-broken, so AP's actions stay as fallbacks).
+- **AUTH-SHAPE ASSUMPTION — verified by construction (batch ask):** Graph uses a
+  standard `Authorization: Bearer <token>` over HTTPS — the same shape as every
+  oauth2 app here. Our actions never set the header; on the managed rail the
+  Composio proxy strips it and injects the connection's real Graph token
+  server-side, keyed by `connected_account_id` — byte-identical to Google/Slack.
+  So "Graph routes through the transport fine" holds by construction; a **live run
+  is still needed** to confirm end-to-end (hence PENDING, not VERIFIED).
+- **Encoding note:** Graph returns `/me/messages` newest-first by default, so we
+  send **no** `$orderby` — deliberately avoiding URL-encoding a spaced OData value
+  (`receivedDateTime desc` → `+`-vs-`%20`) that Graph's parser might reject and
+  that we can't live-verify. (Google's `q` tolerates `+`-as-space, live-proven;
+  Graph is a different parser, so we don't rely on it.)
+- **Auth:** OAuth2 Bearer (Microsoft identity). Composio toolkit `outlook`.
+- **Offline:** `src/actions/outlook/outlook.spec.ts` (7 golden cases incl. the
+  sendMail body, the `$search`+ConsistencyLevel branch, the folder-scoped path,
+  and `@odata.nextLink` pagination).
+- **Smoke (read, benign):** `list_folders` (no props). The send is gated behind
+  `OUTLOOK_LIVE_SEND=1` + `OUTLOOK_TEST_ADDRESS` and targets the owner's address.
+- **Connection needed:** Outlook — Composio toolkit `outlook`, managed OAUTH2.
+
+  ```bash
+  export OUTLOOK_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/outlook/outlook.live.spec.ts
+  ```
