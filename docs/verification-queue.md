@@ -233,3 +233,24 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **Smoke (read, benign):** `list_owners` (no props) — also exercises the picker.
 - **Connection needed:** HubSpot — Composio toolkit `hubspot`, managed OAUTH2.
 - **Catalog note:** registered in its own `index.ts` (`hubspotActions`).
+
+---
+
+## Scope 2 (top-usage REST apps)
+
+### gmail — LIVE-VERIFIED ✅ (6 actions, live label picker)
+
+- **Actions:** `get_profile`, `list_messages`, `get_message`, `send_message`,
+  `list_labels`, `create_draft`. API v1, JSON — send/draft carry the RFC822
+  message as a base64url `raw` string in a JSON body (no multipart, stays on the
+  managed rail). `list_messages` follows `nextPageToken`.
+- **Auth:** OAuth2 Bearer. Fixed base `gmail.googleapis.com/gmail/v1/users/me`.
+- **Live picker (works today):** label picker (independent) on `list_messages`.
+- **LIVE-VERIFIED 2026-07-08** via Composio account `ca_p-UFh0PsCUvv`
+  (`gmail.get_profile` → m.huzefa1993@gmail.com, 8460 messages; `list_labels` →
+  16 real labels; label picker loaded live; `list_messages` → 3 real ids).
+  `src/actions/gmail/gmail.live.spec.ts` (run with `ORCHESTR_LIVE=1` +
+  `COMPOSIO_API_KEY`). Offline: `src/actions/gmail/gmail.spec.ts` (5 cases incl. a
+  decoded base64url `raw` MIME assertion).
+- **Not live-smoked (write):** `send_message`, `create_draft` — authored + unit
+  tested; not fired live to avoid sending real mail.
