@@ -1,0 +1,91 @@
+import { HttpClient } from '../../core/http/client';
+import type { NormalizedRequest, NormalizedResponse } from '../../core/http/types';
+import { FakeTransport, stubAuth } from '../../testing/fakes';
+import { closeTask, createTask, getTasks, updateTask } from './tasks';
+
+/**
+ * Golden offline tests for the Todoist actions. A {@link FakeTransport} replays
+ * canned REST v2 responses and records requests, so we assert the create body
+ * (with the inverted priority scale), the project-scoped get, the POST
+ * partial-update, the 204 close synthesis, and the live project picker without a
+ * connection. (Todoist is authored + unit-tested; live is PENDING.)
+ */
+function fake(handler: (req: NormalizedRequest, i: number) => NormalizedResponse) {
+  const transport = new FakeTransport(handler);
+  return { auth: stubAuth(transport, 'oauth2'), http: new HttpClient(), transport };
+}
+
+describe('todoist.create_task', () => {
+  it('POSTs the task with content, project_id and the wire priority', async () => {
+    const { auth, http, transport } = fake(() => ({
+      status: 200,
+      headers: {},
+      data: { id: 't1', content: 'Buy milk' },
+    }));
+    const out = await createTask.execute({
+      auth,
+      http,
+      props: { content: 'Buy milk', project: 'P1', priority: 4, dueString: 'tomorrow' },
+    });
+    expect(out.id).toBe('t1');
+    expect(transport.requests[0]!.body).toEqual({
+      content: 'Buy milk',
+      project_id: 'P1',
+      priority: 4,
+      due_string: 'tomorrow',
+    });
+  });
+});
+
+describe('todoist.find_task (get tasks)', () => {
+  it('scopes to a project and returns the array with a count', async () => {
+    const { auth, http, transport } = fake(() => ({
+      status: 200,
+      headers: {},
+      data: [
+        { id: 't1', content: 'A' },
+        { id: 't2', content: 'B' },
+      ],
+    }));
+    const out = await getTasks.execute({ auth, http, props: { project: 'P1' } });
+    expect(out.count).toBe(2);
+    expect(transport.requests[0]!.url).toContain('project_id=P1');
+  });
+});
+
+describe('todoist.update_task', () => {
+  it('POSTs only the supplied fields to /tasks/{id}', async () => {
+    const { auth, http, transport } = fake(() => ({
+      status: 200,
+      headers: {},
+      data: { id: 't1', content: 'C' },
+    }));
+    await updateTask.execute({ auth, http, props: { taskId: 't1', content: 'C' } });
+    const req = transport.requests[0]!;
+    expect(req.method).toBe('POST');
+    expect(req.url).toBe('https://api.todoist.com/rest/v2/tasks/t1');
+    expect(req.body).toEqual({ content: 'C' });
+  });
+});
+
+describe('todoist.mark_task_completed (close)', () => {
+  it('POSTs to /close and synthesises a confirmation from a 204', async () => {
+    const { auth, http, transport } = fake(() => ({ status: 204, headers: {}, data: undefined }));
+    const out = await closeTask.execute({ auth, http, props: { taskId: 't1' } });
+    expect(out).toEqual({ closed: true, taskId: 't1' });
+    expect(transport.requests[0]!.url).toBe('https://api.todoist.com/rest/v2/tasks/t1/close');
+  });
+});
+
+describe('todoist project picker', () => {
+  it('loads projects and maps name→id', async () => {
+    const { auth, http } = fake(() => ({
+      status: 200,
+      headers: {},
+      data: [{ id: 'P1', name: 'Work' }],
+    }));
+    const picker = await getTasks.loadOptions('project', { auth, http });
+    expect(picker.disabled).toBe(false);
+    expect(picker.options[0]).toEqual({ label: 'Work', value: 'P1' });
+  });
+});

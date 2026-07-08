@@ -26,6 +26,10 @@ export * as sheets from './sheets';
 export * as docs from './docs';
 export * as drive from './drive';
 export * as slides from './slides';
+export * as calendar from './calendar';
+export * as asana from './asana';
+export * as clickup from './clickup';
+export * as todoist from './todoist';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
@@ -46,6 +50,10 @@ import { sheetsActions } from './sheets';
 import { docsActions } from './docs';
 import { driveActions } from './drive';
 import { slidesActions } from './slides';
+import { calendarActions } from './calendar';
+import { asanaActions } from './asana';
+import { clickupActions } from './clickup';
+import { todoistActions } from './todoist';
 
 /** Every reference action, for catalog builds and registration. */
 export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
@@ -80,4 +88,8 @@ export const catalogActions = [
   ...docsActions,
   ...driveActions,
   ...slidesActions,
+  ...calendarActions,
+  ...asanaActions,
+  ...clickupActions,
+  ...todoistActions,
 ];

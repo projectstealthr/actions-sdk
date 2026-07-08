@@ -22,7 +22,11 @@ npx jest src/actions/<app>/<app>.live.spec.ts
 Connected accounts already on the shared Composio account (live-verifiable **now**,
 no new consent needed): `slack` (×2), `github`, `gmail`, `googlesheets`,
 `googledocs`, `googledrive`, `googleslides`. Every scope-1 fallback app below has
-**no connection yet** → all PENDING until a human clicks Allow.
+**no connection yet** → all PENDING until a human clicks Allow. The apps added
+this run — `googlecalendar` (slug `calendar`), `asana`, `clickup`, `todoist` —
+also have **no connection** on the shared account, so all four are **PENDING**
+(authored + unit-tested; each carries a turnkey smoke command below). `trello`
+was **NOT shipped** — see the framework gap.
 
 ## Status legend
 
@@ -57,6 +61,32 @@ today. Reads (GET + query params) are unaffected.
 transport bracket-encodes nested objects/arrays and sets the content-type.
 Non-breaking — existing JSON callers are unchanged. **Write actions waiting on
 this are tagged `form-body-blocked` below.**
+
+### Framework gap #3 — no dual/query-param credential seam (STOPPED Trello)
+
+Trello's REST API authenticates **every** call with TWO query params — an
+application `key` and a per-user `token` (`?key=…&token=…`) — and requires **no**
+per-request OAuth1 signature (the OAuth1 flow only mints the token; API calls are
+plain key+token). The SDK's declarative auth seam can't represent this credential
+shape: `ApiKeyScheme(in:'query')` emits a **single** param, and `DirectCredential`
+carries a single value (bearer / apiKey) or a user/pass pair (basic) — none is a
+clean "two named query params" credential. Consequences:
+
+- **Direct/BYO rail:** cannot attach both `key` and `token` without either abusing
+  `basic` (username=key, password=token) inside a `custom` scheme that appends
+  them as query params — a misrepresentation of the auth in the connect UI — or
+  extending `DirectCredential`. Both are hacks, not shipped.
+- **Managed rail:** Composio would inject key+token server-side, but there is **no
+  Trello connection** on the shared account, so this is unverifiable now.
+
+**STOPPED and reported per the batch mandate — Trello is NOT shipped this run.**
+The precise (non-)finding: it is **not** an OAuth1-*signing* gap (no HMAC needed);
+it is a **credential-shape** gap in the auth seam. Proposed additive, non-breaking
+fix: add a `DirectCredential` variant (e.g. `{ type: 'queryParams'; params }`) or
+let `ApiKeyScheme` carry multiple named params, so a key+token app becomes a
+declarative scheme rather than a bespoke signer. The other four apps this run
+(calendar, asana, clickup, todoist) are unaffected. **Apps blocked by this gap are
+tagged `dual-query-cred-blocked` below.**
 
 Independent pickers (auth + http only, fixed base URL — Slack channels, Linear
 teams, Stripe products, …) are unaffected and ship as live loaders.
@@ -342,3 +372,125 @@ same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
 - **Auth:** OAuth2 Bearer. Base `slides.googleapis.com/v1/presentations`.
 - **LIVE-VERIFIED 2026-07-08** via `ca_8UbwbOB4w9nD` (create → get, 1 slide).
   `src/actions/slides/slides.live.spec.ts`.
+
+### calendar — PENDING (6 actions, live calendar picker) — completes the Google suite
+
+- **Actions:** `create_google_calendar_event` (create), `google_calendar_get_events`
+  (list by time range), `google_calendar_get_event_by_id` (get), `update_event`
+  (PATCH partial-update), `delete_event` (204 → synthesised confirmation),
+  `list_calendars`. API v3, JSON throughout; `create` defaults `end` to start +
+  30 min like the UI; `get_events` sets `singleEvents=true&orderBy=startTime` and
+  follows `nextPageToken`. The first five reuse the platform's AP catalog ids;
+  `list_calendars` is a clean id (AP has no equivalent).
+- **Managed-broken class:** the AP Calendar piece runs on `googleapis`/`gaxios`
+  (the same defect as gmail/sheets/docs/drive/slides), so `calendar` is now in the
+  service's `MANAGED_BROKEN_APPS` set — the dedup offers **only** our actions for
+  this app and suppresses the un-reimplemented AP calendar actions ("offered =
+  works"). This **completes the owned Google suite.**
+- **Auth:** OAuth2 Bearer. Base `www.googleapis.com/calendar/v3`.
+- **Live picker (works today):** the `calendarId` picker lists the user's calendars
+  via `/users/me/calendarList` — independent of any other prop; use `primary` for
+  the default calendar. `list_calendars` also surfaces the ids.
+- **Offline:** `src/actions/calendar/calendar.spec.ts` (9 golden cases incl. the
+  +30-min default end, PATCH partial-update, the 204 delete synthesis, nextPageToken
+  pagination, and the calendar picker).
+- **Smoke (read, benign):** `list_calendars` (no props) — also exercises the picker.
+  Set `GOOGLECALENDAR_CONNECTED_ACCOUNT_ID`; the write round-trip
+  (create→update→get→delete a throwaway event) is gated behind `CALENDAR_LIVE_WRITE=1`.
+- **Connection needed:** Google Calendar — Composio toolkit `googlecalendar`,
+  managed OAUTH2. **No connection on the shared account yet → PENDING.**
+
+  ```bash
+  export GOOGLECALENDAR_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/calendar/calendar.live.spec.ts
+  ```
+
+---
+
+## Scope 3 (project-management apps)
+
+Standard JSON REST apps — they ride **both** rails (managed via Composio, or a BYO
+token) with byte-identical action code, so they are NOT in `MANAGED_BROKEN_APPS`
+(AP executes them fine on axios; our reused-id actions replace the AP row via the
+exact-type rule, and AP's other actions stay as fallbacks). All PENDING — no
+connection on the shared account yet.
+
+### asana — PENDING (5 actions, live project + workspace pickers)
+
+- **Actions:** `create_task`, `get_task`, `update_task`, `list_tasks` (by project),
+  `add_comment`. API v1, JSON with the `{ data: … }` request/response envelope;
+  `create_task` reuses the AP id, the rest are clean ids (AP ships only
+  `create_task`). `list_tasks` follows Asana's `next_page.offset` cursor.
+- **Auth:** OAuth2 Bearer (managed) or a BYO personal access token attached the
+  same way. Fixed base `app.asana.com/api/1.0`.
+- **Live pickers (work today):** project picker (`/projects`) + workspace picker
+  (`/workspaces`) — both independent of other props.
+- **Offline:** `src/actions/asana/asana.spec.ts` (6 golden cases incl. the envelope
+  wrap/unwrap, project→`projects[]` mapping, offset pagination, the project picker).
+- **Smoke (read, benign):** `list_tasks` on any project, or `listWorkspaces` — the
+  live spec loads workspaces + projects and resolves the picker.
+- **Connection needed:** Asana — Composio toolkit `asana`, managed OAUTH2.
+
+  ```bash
+  export ASANA_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/asana/asana.live.spec.ts
+  ```
+
+### clickup — PENDING (4 actions, live list picker via hierarchy walk)
+
+- **Actions:** `create_task`, `get_list_task` (get by id — AP's "Get Task" id,
+  reused), `update_task`, `list_tasks` (by list, `page`/`last_page` cursor).
+  API v2, JSON; `create_task`/`update_task` reuse the AP ids, `get_list_task` reuses
+  AP's get-task id, `list_tasks` is a clean id (AP's `list_workspace_tasks` is
+  workspace-scoped). Static priority picker (1–4).
+- **Auth:** personal token in a bare `Authorization` header (no `Bearer`); managed
+  OAuth attaches server-side. Fixed base `api.clickup.com/api/v2`.
+- **Live picker (works today):** the required `listId` picker is **independent** but
+  walks the hierarchy — teams → spaces → (folderless lists + each folder's lists) —
+  because ClickUp has no flat "list all lists" endpoint and a per-space picker would
+  need a `space` refresher the loader can't read (gap #1). Cost: 1 + T (teams) + 2·S
+  (spaces) requests per picker load, bounded by the account's real structure. A
+  standalone `spaceOptions` resolver is exposed and exercised inside the walk. When
+  the refresher gap closes, swap to a cheaper per-space picker.
+- **Offline:** `src/actions/clickup/clickup.spec.ts` (5 golden cases incl. the
+  page-cursor pagination and the full hierarchy-walk picker with folder paths).
+- **Smoke (read, benign):** `list_tasks` on any list; the live spec loads teams +
+  spaces and resolves the list picker.
+- **Connection needed:** ClickUp — Composio toolkit `clickup`, managed OAUTH2.
+
+  ```bash
+  export CLICKUP_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/clickup/clickup.live.spec.ts
+  ```
+
+### todoist — PENDING (4 actions, live project picker)
+
+- **Actions:** `create_task`, `find_task` (get tasks by project/filter),
+  `update_task`, `mark_task_completed` (close, 204 → synthesised confirmation).
+  REST v2, JSON, un-paginated list. **All four reuse the platform's AP ids** so the
+  dedup replaces those rows with our working, live-picker versions. Static priority
+  picker maps UI p1–p4 onto Todoist's inverted 4→1 wire scale.
+- **Auth:** OAuth2 Bearer (managed) or a BYO token attached the same way. Fixed base
+  `api.todoist.com/rest/v2`.
+- **Live picker (works today):** project picker (`/projects`) — independent.
+- **Offline:** `src/actions/todoist/todoist.spec.ts` (5 golden cases incl. the
+  inverted priority, project-scoped get, POST partial-update, the 204 close, picker).
+- **Smoke (read, benign):** `find_task` (no props) — the live spec loads projects +
+  tasks and resolves the picker.
+- **Connection needed:** Todoist — Composio toolkit `todoist`, managed OAUTH2.
+
+  ```bash
+  export TODOIST_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/todoist/todoist.live.spec.ts
+  ```
+
+### trello — NOT SHIPPED (framework gap — `dual-query-cred-blocked`)
+
+- **Requested** (create_card / get_card / update_card / list_cards / move_card +
+  board/list pickers) but **STOPPED and reported** rather than hacked. Trello
+  authenticates with two query params (`key` + `token`) and needs no OAuth1
+  request signing; the SDK's auth seam can't represent that dual-query-param
+  credential without abusing `basic` in a `custom` scheme or extending
+  `DirectCredential`. See **Framework gap #3** above for the precise finding and
+  the proposed additive fix. Revisit once the seam gains a query-params credential
+  variant (and a Trello connection exists to verify the managed rail).
