@@ -1,16 +1,30 @@
 import type { AuthHandle, OAuth2Scheme } from '../../core/auth';
 import type { HttpClient } from '../../core/http/client';
+import { cursorInBody, paginate } from '../../core/http/pagination';
 import { dropdown, type DropdownOption, type DropdownSchema } from '../../core/props';
 
 /**
- * Shared Todoist (REST API v2) building blocks. Clean-room: the `/rest/v2`
+ * Shared Todoist (unified API v1) building blocks. Clean-room: the `/api/v1`
  * endpoints, the `content`/`due_string` task shape, OAuth2 Bearer auth, and the
  * 1–4 priority scale are Todoist's public contract, read as *spec* and
  * re-expressed here. Everything is JSON, so every action rides both rails
  * (managed via Composio, or a BYO token).
+ *
+ * Todoist retired the old `/rest/v2` endpoints (they now answer 410 Gone); the
+ * unified `/api/v1` list endpoints return `{ results, next_cursor }` and page
+ * with `?cursor=` — hence {@link listProjects} / `getTasks` walk the cursor.
  */
 
-export const TODOIST_API_BASE = 'https://api.todoist.com/rest/v2';
+export const TODOIST_API_BASE = 'https://api.todoist.com/api/v1';
+
+/** A cursor page of a v1 list endpoint. */
+export interface TodoistPage<T> {
+  results?: T[];
+  next_cursor?: string | null;
+}
+
+/** Advance a v1 list endpoint: `next_cursor` (body) → `?cursor=` on the same URL. */
+export const todoistNextPage = cursorInBody({ cursorPath: ['next_cursor'], cursorParam: 'cursor' });
 
 /**
  * Todoist authenticates with an OAuth2 bearer access token (managed) or a bare
@@ -55,10 +69,16 @@ export const PRIORITY_OPTIONS: DropdownOption<number>[] = [
   { label: 'Normal (p4)', value: 1 },
 ];
 
-/** Fetch the user's projects — shared by the project picker. */
+/** Fetch the user's projects (cursor-paged) — shared by the project picker. */
 export async function listProjects(http: HttpClient, auth: AuthHandle): Promise<TodoistProject[]> {
-  const res = await http.get<TodoistProject[]>(`${TODOIST_API_BASE}/projects`, { auth });
-  return res.data ?? [];
+  return paginate<TodoistProject>({
+    http,
+    auth,
+    url: `${TODOIST_API_BASE}/projects`,
+    extractItems: (res) => (res.data as TodoistPage<TodoistProject>)?.results ?? [],
+    nextPage: todoistNextPage,
+    maxItems: 500,
+  });
 }
 
 /** Live project picker — independent of any other prop, so it works under today's loader contract. */

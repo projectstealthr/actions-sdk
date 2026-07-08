@@ -5,10 +5,10 @@ import { closeTask, createTask, getTasks, updateTask } from './tasks';
 
 /**
  * Golden offline tests for the Todoist actions. A {@link FakeTransport} replays
- * canned REST v2 responses and records requests, so we assert the create body
- * (with the inverted priority scale), the project-scoped get, the POST
- * partial-update, the 204 close synthesis, and the live project picker without a
- * connection. (Todoist is authored + unit-tested; live is PENDING.)
+ * canned unified-API-v1 responses (`{ results }` for lists) and records requests,
+ * so we assert the create body (with the inverted priority scale), the
+ * project-scoped cursor-paged get, the POST partial-update, the 204 close
+ * synthesis, and the live project picker without a connection.
  */
 function fake(handler: (req: NormalizedRequest, i: number) => NormalizedResponse) {
   const transport = new FakeTransport(handler);
@@ -38,14 +38,17 @@ describe('todoist.create_task', () => {
 });
 
 describe('todoist.find_task (get tasks)', () => {
-  it('scopes to a project and returns the array with a count', async () => {
+  it('scopes to a project and returns the cursor-paged results with a count', async () => {
     const { auth, http, transport } = fake(() => ({
       status: 200,
       headers: {},
-      data: [
-        { id: 't1', content: 'A' },
-        { id: 't2', content: 'B' },
-      ],
+      data: {
+        results: [
+          { id: 't1', content: 'A' },
+          { id: 't2', content: 'B' },
+        ],
+        next_cursor: null,
+      },
     }));
     const out = await getTasks.execute({ auth, http, props: { project: 'P1' } });
     expect(out.count).toBe(2);
@@ -63,7 +66,7 @@ describe('todoist.update_task', () => {
     await updateTask.execute({ auth, http, props: { taskId: 't1', content: 'C' } });
     const req = transport.requests[0]!;
     expect(req.method).toBe('POST');
-    expect(req.url).toBe('https://api.todoist.com/rest/v2/tasks/t1');
+    expect(req.url).toBe('https://api.todoist.com/api/v1/tasks/t1');
     expect(req.body).toEqual({ content: 'C' });
   });
 });
@@ -73,7 +76,7 @@ describe('todoist.mark_task_completed (close)', () => {
     const { auth, http, transport } = fake(() => ({ status: 204, headers: {}, data: undefined }));
     const out = await closeTask.execute({ auth, http, props: { taskId: 't1' } });
     expect(out).toEqual({ closed: true, taskId: 't1' });
-    expect(transport.requests[0]!.url).toBe('https://api.todoist.com/rest/v2/tasks/t1/close');
+    expect(transport.requests[0]!.url).toBe('https://api.todoist.com/api/v1/tasks/t1/close');
   });
 });
 
@@ -82,7 +85,7 @@ describe('todoist project picker', () => {
     const { auth, http } = fake(() => ({
       status: 200,
       headers: {},
-      data: [{ id: 'P1', name: 'Work' }],
+      data: { results: [{ id: 'P1', name: 'Work' }], next_cursor: null },
     }));
     const picker = await getTasks.loadOptions('project', { auth, http });
     expect(picker.disabled).toBe(false);

@@ -1,7 +1,16 @@
 import { defineAction } from '../../core/action';
+import { paginate } from '../../core/http/pagination';
 import type { JsonValue } from '../../core/http/types';
 import { dropdown, json, longText, shortText } from '../../core/props';
-import { PRIORITY_OPTIONS, TODOIST_API_BASE, type TodoistTask, projectProp, todoistAuth } from './common';
+import {
+  PRIORITY_OPTIONS,
+  TODOIST_API_BASE,
+  type TodoistPage,
+  type TodoistTask,
+  projectProp,
+  todoistAuth,
+  todoistNextPage,
+} from './common';
 
 /**
  * Public types — all four reuse the platform's existing AP ids so the service
@@ -74,11 +83,15 @@ export const getTasks = defineAction({
     }),
   },
   async run({ auth, props, http }): Promise<{ tasks: TodoistTask[]; count: number }> {
-    const res = await http.get<TodoistTask[]>(`${TODOIST_API_BASE}/tasks`, {
+    const tasks = await paginate<TodoistTask>({
       auth,
+      http,
+      url: `${TODOIST_API_BASE}/tasks`,
       query: { project_id: props.project, filter: props.filter },
+      extractItems: (res) => (res.data as TodoistPage<TodoistTask>)?.results ?? [],
+      nextPage: todoistNextPage,
+      maxItems: 500,
     });
-    const tasks = res.data ?? [];
     return { tasks, count: tasks.length };
   },
 });
