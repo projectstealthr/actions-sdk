@@ -190,3 +190,18 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **Smoke (read, benign):** `list_admins` (no props) — also exercises the picker.
 - **Connection needed:** Intercom — Composio toolkit `intercom`, managed OAUTH2.
 - **Catalog note:** registered in its own `index.ts` (`intercomActions`).
+
+### mailchimp — PENDING (6 actions)
+
+- **Actions:** `list_audiences`, `get_list`, `list_campaigns`, `add_member`,
+  `get_member`, `update_member`. Marketing API `/3.0`, JSON (writes work). Members
+  are addressed by the MD5 subscriber hash of the lowercased email.
+- **Auth:** BYO API key via HTTP Basic (any user + key); managed OAuth attaches a
+  Bearer token server-side. Region-scoped host → `serverPrefix` prop (e.g. us19).
+- **Offline:** `src/actions/mailchimp/mailchimp.spec.ts` (5 golden cases incl. a
+  verified MD5 subscriber hash and the datacenter host).
+- **Smoke (read, benign):** `list_audiences` with `serverPrefix` set.
+- **Connection needed:** Mailchimp — Composio toolkit `mailchimp`, managed OAUTH2.
+- **`picker-blocked`:** audience/list pickers need `serverPrefix` (a prop) → text
+  inputs for now.
+- **Catalog note:** registered in its own `index.ts` (`mailchimpActions`).
