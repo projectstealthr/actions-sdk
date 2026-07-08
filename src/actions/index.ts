@@ -20,6 +20,7 @@ export * as intercom from './intercom';
 export * as mailchimp from './mailchimp';
 export * as zendesk from './zendesk';
 export * as hubspot from './hubspot';
+export * as gmail from './gmail';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
@@ -34,6 +35,7 @@ import { intercomActions } from './intercom';
 import { mailchimpActions } from './mailchimp';
 import { zendeskActions } from './zendesk';
 import { hubspotActions } from './hubspot';
+import { gmailActions } from './gmail';
 
 /** Every reference action, for catalog builds and registration. */
 export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
@@ -62,4 +64,5 @@ export const catalogActions = [
   ...mailchimpActions,
   ...zendeskActions,
   ...hubspotActions,
+  ...gmailActions,
 ];
