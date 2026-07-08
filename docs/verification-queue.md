@@ -123,3 +123,20 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   customer picker with/without search).
 - **Smoke (read, benign):** `get_balance` (no props).
 - **Connection needed:** Stripe — Composio toolkit `stripe`, managed OAUTH2 (Connect).
+
+### airtable — PENDING (6 actions, live base picker)
+
+- **Actions:** `create_record`, `get_record`, `list_records`, `update_record`,
+  `delete_record`, `list_bases`. Fixed base `api.airtable.com/v0`; JSON bodies
+  (writes work). `list_records` follows the `offset` cursor via `cursorInBody`.
+- **Auth:** personal access token as Bearer (`apiKey` header, `Bearer ` prefix);
+  managed OAuth attaches server-side.
+- **Live picker (works today):** base picker (independent). `picker-blocked`:
+  table picker + field/view pickers (base/table refreshers) — text inputs for now.
+- **Offline:** `src/actions/airtable/airtable.spec.ts` (7 golden cases incl. offset
+  pagination + the base-picker resolver).
+- **Smoke (read, benign):** `list_bases` (no props) — also exercises the picker.
+- **Connection needed:** Airtable — Composio toolkit `airtable`, managed OAUTH2.
+- **Catalog note:** registered in `src/actions/airtable/index.ts`
+  (`airtableActions`); top-level `catalogActions` aggregation deferred (a parallel
+  framework workstream holds `src/actions/index.ts` open — reconcile at the end).
