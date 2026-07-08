@@ -44,6 +44,20 @@ schemas is stored but consumed nowhere. Consequences:
    build their base URL from an `instanceUrl`/`subdomain` **prop**, which the
    loader can't read, so even a flat "list projects" picker is blocked.
 
+### Framework gap #2 — no form-encoded request bodies
+
+The HTTP client + both transports serialise request bodies as **JSON only**
+(`JSON.stringify` + `application/json`). Apps whose **writes** require
+`application/x-www-form-urlencoded` with bracketed nested params (Stripe:
+`address[line1]=…`; some OAuth token endpoints; Twilio) cannot express a write
+today. Reads (GET + query params) are unaffected.
+
+**Proposed additive fix:** let an action opt a request into form encoding (e.g.
+`http.post(url, { auth, form: {...} })` or a `bodyEncoding: 'form'` option); the
+transport bracket-encodes nested objects/arrays and sets the content-type.
+Non-breaking — existing JSON callers are unchanged. **Write actions waiting on
+this are tagged `form-body-blocked` below.**
+
 Independent pickers (auth + http only, fixed base URL — Slack channels, Linear
 teams, Stripe products, …) are unaffected and ship as live loaders.
 
@@ -93,3 +107,19 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **Smoke (read, benign):** `list_teams` (no props) — also exercises the picker
   resolver. Or `list_issues` with `limit: 1`.
 - **Connection needed:** Linear — Composio toolkit `linear`, managed OAUTH2.
+
+### stripe — PENDING (6 read actions + live customer picker)
+
+- **Actions (reads):** `get_customer`, `list_customers`, `search_customers`,
+  `list_charges`, `list_subscriptions`, `get_balance`. Fixed base `api.stripe.com/v1`.
+- **Auth:** secret key as Bearer (`apiKey` header, `Bearer ` prefix); managed
+  Connect OAuth attaches server-side.
+- **Live picker (works today):** customer picker — independent, and it uses the
+  loader `search` term (`customers/search`) so it stays fast on large accounts.
+- **`form-body-blocked`:** `create_customer`, `create_payment_link`,
+  `create_refund`, `update_customer` — deferred until the client can send
+  form-encoded bodies (framework gap #2).
+- **Offline:** `src/actions/stripe/stripe.spec.ts` (6 golden cases incl. the
+  customer picker with/without search).
+- **Smoke (read, benign):** `get_balance` (no props).
+- **Connection needed:** Stripe — Composio toolkit `stripe`, managed OAUTH2 (Connect).
