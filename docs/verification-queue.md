@@ -205,3 +205,18 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **`picker-blocked`:** audience/list pickers need `serverPrefix` (a prop) → text
   inputs for now.
 - **Catalog note:** registered in its own `index.ts` (`mailchimpActions`).
+
+### zendesk — PENDING (6 actions)
+
+- **Actions:** `create_ticket`, `get_ticket`, `update_ticket`, `list_tickets`,
+  `search`, `list_users`. Support API `/api/v2`, JSON (writes work); `next_page`
+  (full-URL) pagination.
+- **Auth:** BYO via HTTP Basic (`{email}/token` + API token); managed OAuth
+  attaches a Bearer token server-side. Subdomain-scoped → `subdomain` prop.
+- **Offline:** `src/actions/zendesk/zendesk.spec.ts` (5 golden cases incl. the
+  `{ ticket }` write envelope, internal-comment shaping, next_page pagination).
+- **Smoke (read, benign):** `list_tickets` with `subdomain` set.
+- **Connection needed:** Zendesk — Composio toolkit `zendesk`, managed OAUTH2.
+- **`picker-blocked`:** assignee/group pickers need `subdomain` (a prop) → number/
+  text inputs for now.
+- **Catalog note:** registered in its own `index.ts` (`zendeskActions`).
