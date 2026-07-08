@@ -21,6 +21,7 @@ export * as mailchimp from './mailchimp';
 export * as zendesk from './zendesk';
 export * as hubspot from './hubspot';
 export * as gmail from './gmail';
+export * as notion from './notion';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
@@ -36,6 +37,7 @@ import { mailchimpActions } from './mailchimp';
 import { zendeskActions } from './zendesk';
 import { hubspotActions } from './hubspot';
 import { gmailActions } from './gmail';
+import { notionActions } from './notion';
 
 /** Every reference action, for catalog builds and registration. */
 export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
@@ -65,4 +67,5 @@ export const catalogActions = [
   ...zendeskActions,
   ...hubspotActions,
   ...gmailActions,
+  ...notionActions,
 ];
