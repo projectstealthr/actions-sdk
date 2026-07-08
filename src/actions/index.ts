@@ -22,6 +22,10 @@ export * as zendesk from './zendesk';
 export * as hubspot from './hubspot';
 export * as gmail from './gmail';
 export * as notion from './notion';
+export * as sheets from './sheets';
+export * as docs from './docs';
+export * as drive from './drive';
+export * as slides from './slides';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
@@ -38,6 +42,10 @@ import { zendeskActions } from './zendesk';
 import { hubspotActions } from './hubspot';
 import { gmailActions } from './gmail';
 import { notionActions } from './notion';
+import { sheetsActions } from './sheets';
+import { docsActions } from './docs';
+import { driveActions } from './drive';
+import { slidesActions } from './slides';
 
 /** Every reference action, for catalog builds and registration. */
 export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
@@ -68,4 +76,8 @@ export const catalogActions = [
   ...hubspotActions,
   ...gmailActions,
   ...notionActions,
+  ...sheetsActions,
+  ...docsActions,
+  ...driveActions,
+  ...slidesActions,
 ];

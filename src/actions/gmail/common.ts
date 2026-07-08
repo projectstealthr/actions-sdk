@@ -52,6 +52,31 @@ export async function labelOptions(http: HttpClient, auth: AuthHandle): Promise<
 }
 
 /**
+ * Compose a Gmail search string (the `q` param) from the common structured
+ * filters. Clean-room: the `from:`/`to:`/`subject:` operators are Gmail's public
+ * search syntax. Values with spaces are quoted so a multi-word subject stays one
+ * operator. An extra raw `query` is appended verbatim for power users.
+ */
+export function buildSearchQuery(filters: {
+  from?: string;
+  to?: string;
+  subject?: string;
+  query?: string;
+}): string {
+  const terms: string[] = [];
+  if (filters.from) terms.push(`from:${quoteIfNeeded(filters.from)}`);
+  if (filters.to) terms.push(`to:${quoteIfNeeded(filters.to)}`);
+  if (filters.subject) terms.push(`subject:${quoteIfNeeded(filters.subject)}`);
+  if (filters.query) terms.push(filters.query.trim());
+  return terms.join(' ').trim();
+}
+
+function quoteIfNeeded(value: string): string {
+  const trimmed = value.trim();
+  return /\s/.test(trimmed) ? `"${trimmed}"` : trimmed;
+}
+
+/**
  * Build an RFC822 message and base64url-encode it for Gmail's `raw` field.
  * Clean-room: the header/body layout and base64url encoding are the email + Gmail
  * spec, not copied code.

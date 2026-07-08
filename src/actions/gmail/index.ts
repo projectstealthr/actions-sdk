@@ -1,5 +1,6 @@
 export {
   buildRawMessage,
+  buildSearchQuery,
   GMAIL_API_BASE,
   type GmailLabel,
   type GmailMessageRef,
@@ -9,28 +10,31 @@ export {
   listGmailLabels,
 } from './common';
 export {
-  GET_MESSAGE_TYPE,
+  findEmail,
+  GET_EMAIL_TYPE,
   GET_PROFILE_TYPE,
+  getEmail,
+  getProfile,
   type GmailMessage,
   type GmailSendResult,
-  getMessage,
-  getProfile,
   LIST_MESSAGES_TYPE,
   listMessages,
-  SEND_MESSAGE_TYPE,
-  sendMessage,
+  SEARCH_EMAIL_TYPE,
+  SEND_EMAIL_TYPE,
+  sendEmail,
 } from './messages';
 export { CREATE_DRAFT_TYPE, createDraft, type GmailDraft, LIST_LABELS_TYPE, listLabels } from './labels';
 
 import { createDraft, listLabels } from './labels';
-import { getMessage, getProfile, listMessages, sendMessage } from './messages';
+import { findEmail, getEmail, getProfile, listMessages, sendEmail } from './messages';
 
 /** Every Gmail action, for catalog builds and registration. */
 export const gmailActions = [
   getProfile,
   listMessages,
-  getMessage,
-  sendMessage,
+  findEmail,
+  getEmail,
+  sendEmail,
   listLabels,
   createDraft,
 ] as const;

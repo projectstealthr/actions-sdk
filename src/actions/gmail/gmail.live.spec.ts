@@ -3,7 +3,7 @@ import { createComposioAuth } from '../../core/auth-factories';
 import { HttpClient } from '../../core/http/client';
 import { composioApiKey, liveComposioDescribe } from '../../testing/live';
 import { listLabels } from './labels';
-import { getProfile, listMessages } from './messages';
+import { findEmail, getProfile, listMessages, sendEmail } from './messages';
 
 /**
  * LIVE smoke tests for Gmail via the Composio managed proxy. Gmail is a connected
@@ -60,4 +60,33 @@ liveComposioDescribe('gmail — live via Composio managed proxy', () => {
     }
     console.log(`live: gmail.list_messages → ${out.count} message id(s)`);
   }, 30_000);
+
+  it('find (gmail_search_mail) composes filters into a real search', async () => {
+    const out = await findEmail.execute({ auth, http, props: { query: 'newer_than:5y', max: 2 } });
+    expect(Array.isArray(out.messages)).toBe(true);
+    expect(out.query).toBe('newer_than:5y');
+    console.log(`live: gmail.gmail_search_mail → ${out.count} match(es) for "${out.query}"`);
+  }, 30_000);
+
+  // A real write — sends a benign mail to the mailbox's OWN address. Off by
+  // default (adds a message to the inbox); opt in with GMAIL_LIVE_SEND=1.
+  const maybeSend = process.env.GMAIL_LIVE_SEND === '1' ? it : it.skip;
+  maybeSend(
+    'send_email delivers a benign mail to the owner’s own address',
+    async () => {
+      const profile = await getProfile.execute({ auth, http, props: {} });
+      const out = await sendEmail.execute({
+        auth,
+        http,
+        props: {
+          to: profile.emailAddress,
+          subject: `Orchestr SDK live send ${new Date().toISOString()}`,
+          body: 'Benign live-verification message from the Orchestr Action SDK.',
+        },
+      });
+      expect(typeof out.id).toBe('string');
+      console.log(`live: gmail.send_email → message ${out.id} to ${profile.emailAddress}`);
+    },
+    30_000,
+  );
 });

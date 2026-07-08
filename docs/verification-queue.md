@@ -238,22 +238,27 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 
 ## Scope 2 (top-usage REST apps)
 
-### gmail — LIVE-VERIFIED ✅ (6 actions, live label picker)
+### gmail — LIVE-VERIFIED ✅ (7 actions, live label picker)
 
-- **Actions:** `get_profile`, `list_messages`, `get_message`, `send_message`,
+- **Actions:** `get_profile`, `list_messages`, `gmail_search_mail` (find by
+  from/to/subject/query/label/max), `gmail_get_mail` (get), `send_email`,
   `list_labels`, `create_draft`. API v1, JSON — send/draft carry the RFC822
   message as a base64url `raw` string in a JSON body (no multipart, stays on the
-  managed rail). `list_messages` follows `nextPageToken`.
+  managed rail). `list_messages` + `gmail_search_mail` follow `nextPageToken`.
+- **Catalog-id alignment:** the send/get/find ids reuse the platform's existing AP
+  catalog ids (`gmail.send_email`, `gmail.gmail_get_mail`, `gmail.gmail_search_mail`)
+  so the service dedup replaces the broken-on-managed AP rows with ours and any plan
+  referencing the established id routes to our working action.
 - **Auth:** OAuth2 Bearer. Fixed base `gmail.googleapis.com/gmail/v1/users/me`.
-- **Live picker (works today):** label picker (independent) on `list_messages`.
+- **Live picker (works today):** label picker (independent) on `list_messages`
+  and `gmail_search_mail`.
 - **LIVE-VERIFIED 2026-07-08** via Composio account `ca_p-UFh0PsCUvv`
-  (`gmail.get_profile` → m.huzefa1993@gmail.com, 8460 messages; `list_labels` →
-  16 real labels; label picker loaded live; `list_messages` → 3 real ids).
+  (`get_profile` → m.huzefa1993@gmail.com, 8464 messages; `list_labels` → 16 real
+  labels; `list_messages` → 3 real ids; `gmail_search_mail` → real matches;
+  **`send_email` delivered a real benign message to the owner's own address**).
   `src/actions/gmail/gmail.live.spec.ts` (run with `ORCHESTR_LIVE=1` +
-  `COMPOSIO_API_KEY`). Offline: `src/actions/gmail/gmail.spec.ts` (5 cases incl. a
-  decoded base64url `raw` MIME assertion).
-- **Not live-smoked (write):** `send_message`, `create_draft` — authored + unit
-  tested; not fired live to avoid sending real mail.
+  `COMPOSIO_API_KEY`; the send is gated behind `GMAIL_LIVE_SEND=1`). Offline:
+  `src/actions/gmail/gmail.spec.ts`.
 
 ### notion — PENDING (6 actions, live database picker)
 
@@ -271,3 +276,69 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **Smoke (read, benign):** `search` with `filter: 'database'` (no query).
 - **Connection needed:** Notion — Composio toolkit `notion`, managed OAUTH2.
 - **Catalog note:** registered in its own `index.ts` (`notionActions`).
+
+---
+
+## Scope 2 (Google apps — the managed-broken class the SDK OWNS)
+
+The AP Google pieces run on `googleapis`/`gaxios`, which the piece-runner's
+managed transport can't patch → the sentinel token leaks and Google rejects the
+call. There is no Composio-execution fallback for them either (they are not in
+`managed-app-rails.ts`'s `FALLBACK_ONLY_APPS`), so a surfaced AP Google action
+routes to the failing piece. Our clean-room actions ride the SDK's one http client
++ Composio proxy transport, which attaches the real token server-side — so managed
+Gmail/Sheets/Docs/Drive/Slides actually work. The service dedup is app-aware for
+these apps: OUR actions are offered and the un-reimplemented AP actions of the
+same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
+
+### sheets — LIVE-VERIFIED ✅ (6 actions, live spreadsheet picker)
+
+- **Actions:** `create_spreadsheet`, `read_range`, `insert_row` (append),
+  `update_row`, `clear_sheet`, `list_sheets`. API v4, JSON throughout;
+  `insert_row`/`update_row` use `USER_ENTERED`. `insert_row`/`update_row` reuse the
+  AP catalog ids (`sheets.insert_row`, `sheets.update_row`); the rest take clean
+  ids (the AP equivalents are hyphenated, which the action namespace forbids).
+- **Auth:** OAuth2 Bearer. Base `sheets.googleapis.com/v4/spreadsheets`.
+- **Live picker (works today):** the `spreadsheetId` picker lists the user's
+  spreadsheets via Drive `files.list` — independent of any other prop. The managed
+  Sheets connection carries Drive scope (verified live); if a connection lacks it
+  the loader throws and the platform degrades the field to free text.
+- **`picker-blocked`:** a per-tab `sheet` picker would depend on the chosen
+  `spreadsheetId` (a set prop the loader can't read) — so `range` is A1 text (e.g.
+  `Sheet1!A1:C10`); `list_sheets` surfaces the tab names.
+- **LIVE-VERIFIED 2026-07-08** via Composio account `ca_N_9ktTrHUUqN`
+  (create → append → read `[["Name","Score"],["Ada","99"]]` → update → clear →
+  list tabs; the Drive-backed picker returned 5 real spreadsheets).
+  `src/actions/sheets/sheets.live.spec.ts`.
+
+### docs — LIVE-VERIFIED ✅ (3 actions)
+
+- **Actions:** `create_document`, `read_document` (returns derived plain text),
+  `append_text` (a single `insertText` at end-of-segment). API v1, JSON. Reuses the
+  AP catalog ids (`docs.create_document`, `docs.read_document`, `docs.append_text`).
+- **Auth:** OAuth2 Bearer. Base `docs.googleapis.com/v1/documents`.
+- **LIVE-VERIFIED 2026-07-08** via `ca_0gKJcMiZ6nEm` (create → append → read back
+  "Hello Orchestr."). `src/actions/docs/docs.live.spec.ts`.
+
+### drive — LIVE-VERIFIED ✅ (3 actions, JSON-metadata only)
+
+- **Actions:** `list_files` (list/search via the raw `q` grammar, `nextPageToken`
+  pagination), `get_file` (metadata by id), `create_folder`. API v3, JSON. AP ids
+  are hyphenated → clean underscore ids.
+- **MANAGED-FILE LIMITATION (surfaced honestly):** the managed proxy carries JSON
+  only (docs/FRAMEWORK-NOTES.md §B), so uploading/downloading file **content**
+  (`alt=media`, multipart `uploadType`) cannot ride the managed rail. These actions
+  therefore cover the JSON-metadata surface only — no binary upload/download.
+  Binary file movement needs a direct (bring-your-own) connection.
+- **Auth:** OAuth2 Bearer. Base `www.googleapis.com/drive/v3/files`.
+- **LIVE-VERIFIED 2026-07-08** via `ca_-fITpAJbTmTT` (list 5 real files; create a
+  folder → get it back by id). `src/actions/drive/drive.live.spec.ts`.
+
+### slides — LIVE-VERIFIED ✅ (2 actions)
+
+- **Actions:** `create_presentation`, `get_presentation` (id/title/slide-count
+  summary). API v1, JSON. `get_presentation` reuses the AP id; `create` is a clean
+  new id (AP has no create).
+- **Auth:** OAuth2 Bearer. Base `slides.googleapis.com/v1/presentations`.
+- **LIVE-VERIFIED 2026-07-08** via `ca_8UbwbOB4w9nD` (create → get, 1 slide).
+  `src/actions/slides/slides.live.spec.ts`.
