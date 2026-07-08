@@ -13,6 +13,13 @@ export * as github from './github';
 export * as jira from './jira';
 export * as linear from './linear';
 export * as stripe from './stripe';
+export * as airtable from './airtable';
+export * as calendly from './calendly';
+export * as salesforce from './salesforce';
+export * as intercom from './intercom';
+export * as mailchimp from './mailchimp';
+export * as zendesk from './zendesk';
+export * as hubspot from './hubspot';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
@@ -20,15 +27,16 @@ import { listIssues, newPush } from './github';
 import { jiraActions } from './jira';
 import { linearActions } from './linear';
 import { stripeActions } from './stripe';
+import { airtableActions } from './airtable';
+import { calendlyActions } from './calendly';
+import { salesforceActions } from './salesforce';
+import { intercomActions } from './intercom';
+import { mailchimpActions } from './mailchimp';
+import { zendeskActions } from './zendesk';
+import { hubspotActions } from './hubspot';
 
 /** Every reference action, for catalog builds and registration. */
-export const referenceActions = [
-  sendChannelMessage,
-  listChannels,
-  listIssues,
-  getFile,
-  uploadFile,
-] as const;
+export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
 
 /** Every reference trigger. */
 export const referenceTriggers = [newMessage, newChannel, newPush] as const;
@@ -47,4 +55,11 @@ export const catalogActions = [
   ...jiraActions,
   ...linearActions,
   ...stripeActions,
+  ...airtableActions,
+  ...calendlyActions,
+  ...salesforceActions,
+  ...intercomActions,
+  ...mailchimpActions,
+  ...zendeskActions,
+  ...hubspotActions,
 ];
