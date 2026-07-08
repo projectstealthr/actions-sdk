@@ -254,3 +254,20 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   decoded base64url `raw` MIME assertion).
 - **Not live-smoked (write):** `send_message`, `create_draft` — authored + unit
   tested; not fired live to avoid sending real mail.
+
+### notion — PENDING (6 actions, live database picker)
+
+- **Actions:** `search`, `get_database`, `query_database`, `create_page`,
+  `get_page`, `update_page`. Fixed base `api.notion.com/v1`, JSON; pins
+  `Notion-Version: 2022-06-28`.
+- **Auth:** integration/OAuth token as Bearer.
+- **Live picker (works today):** database picker — independent (searches objects
+  filtered to databases) and honours the loader `search` term; used by
+  get_database / query_database / create_page.
+- **`picker-blocked`:** per-column property pickers depend on the chosen
+  database's schema → `properties`/`filter` are raw Notion JSON for now.
+- **Offline:** `src/actions/notion/notion.spec.ts` (4 golden cases incl. the
+  database picker with search + the plain-title helper).
+- **Smoke (read, benign):** `search` with `filter: 'database'` (no query).
+- **Connection needed:** Notion — Composio toolkit `notion`, managed OAUTH2.
+- **Catalog note:** registered in its own `index.ts` (`notionActions`).
