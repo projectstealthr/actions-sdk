@@ -57,7 +57,7 @@ export async function asanaGet<T>(http: HttpClient, auth: AuthHandle, url: strin
 }
 
 /** Fetch the connected user's workspaces — shared by the list read and the workspace picker. */
-export async function listWorkspaces(http: HttpClient, auth: AuthHandle): Promise<AsanaResource[]> {
+export async function listAsanaWorkspaces(http: HttpClient, auth: AuthHandle): Promise<AsanaResource[]> {
   const res = await http.get<{ data?: AsanaResource[] }>(`${ASANA_API_BASE}/workspaces`, {
     auth,
     query: { limit: 100, opt_fields: 'name' },
@@ -65,8 +65,8 @@ export async function listWorkspaces(http: HttpClient, auth: AuthHandle): Promis
   return res.data.data ?? [];
 }
 
-/** Fetch the projects the user can access — shared by the project picker. */
-export async function listProjects(http: HttpClient, auth: AuthHandle): Promise<AsanaResource[]> {
+/** Fetch the projects the user can access — shared by the list read and the project picker. */
+export async function listAsanaProjects(http: HttpClient, auth: AuthHandle): Promise<AsanaResource[]> {
   const res = await http.get<{ data?: AsanaResource[] }>(`${ASANA_API_BASE}/projects`, {
     auth,
     query: { limit: 100, opt_fields: 'name', archived: false },
@@ -79,13 +79,13 @@ export async function workspaceOptions(
   http: HttpClient,
   auth: AuthHandle,
 ): Promise<DropdownOption<string>[]> {
-  const workspaces = await listWorkspaces(http, auth);
+  const workspaces = await listAsanaWorkspaces(http, auth);
   return workspaces.map((w) => ({ label: w.name, value: w.gid }));
 }
 
 /** Live project picker — independent (lists accessible projects), so it works today. */
 export async function projectOptions(http: HttpClient, auth: AuthHandle): Promise<DropdownOption<string>[]> {
-  const projects = await listProjects(http, auth);
+  const projects = await listAsanaProjects(http, auth);
   return projects.map((p) => ({ label: p.name, value: p.gid }));
 }
 

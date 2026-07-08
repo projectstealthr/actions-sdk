@@ -3,7 +3,7 @@ import { createComposioAuth } from '../../core/auth-factories';
 import { HttpClient } from '../../core/http/client';
 import { composioApiKey, liveComposioDescribe } from '../../testing/live';
 import { listTasks } from './tasks';
-import { listProjects, listWorkspaces } from './common';
+import { listAsanaProjects, listAsanaWorkspaces } from './common';
 
 /**
  * LIVE smoke tests for Asana via the Composio managed proxy. Gated behind
@@ -35,9 +35,9 @@ liveComposioDescribe('asana — live via Composio managed proxy', () => {
   gated()(
     'workspaces + projects load, and the project picker resolves',
     async () => {
-      const workspaces = await listWorkspaces(http, auth);
+      const workspaces = await listAsanaWorkspaces(http, auth);
       expect(Array.isArray(workspaces)).toBe(true);
-      const projects = await listProjects(http, auth);
+      const projects = await listAsanaProjects(http, auth);
       expect(Array.isArray(projects)).toBe(true);
       assertNoVendorStrings({ workspaces, projects });
       const picker = await listTasks.loadOptions('project', { auth, http });

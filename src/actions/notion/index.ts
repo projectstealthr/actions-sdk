@@ -1,4 +1,5 @@
 export {
+  collectNotionQuery,
   databaseOptions,
   NOTION_API_BASE,
   type NotionObject,
@@ -15,9 +16,19 @@ export {
   search,
 } from './databases';
 export { CREATE_PAGE_TYPE, createPage, GET_PAGE_TYPE, getPage, UPDATE_PAGE_TYPE, updatePage } from './pages';
+export { APPEND_BLOCK_CHILDREN_TYPE, type AppendBlockChildrenResult, appendBlockChildren } from './blocks';
 
+import { appendBlockChildren } from './blocks';
 import { getDatabase, queryDatabase, search } from './databases';
 import { createPage, getPage, updatePage } from './pages';
 
 /** Every Notion action, for catalog builds and registration. */
-export const notionActions = [search, getDatabase, queryDatabase, createPage, getPage, updatePage] as const;
+export const notionActions = [
+  search,
+  getDatabase,
+  queryDatabase,
+  createPage,
+  getPage,
+  updatePage,
+  appendBlockChildren,
+] as const;

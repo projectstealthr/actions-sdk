@@ -2,9 +2,12 @@ export {
   HUBSPOT_API_BASE,
   type HubspotObject,
   type HubspotOwner,
+  type HubspotPipeline,
   hubspotAuth,
+  listDealPipelines,
   listHubspotOwners,
   ownerOptions,
+  pipelineOptions,
 } from './common';
 export {
   CREATE_CONTACT_TYPE,
@@ -18,9 +21,11 @@ export {
   UPDATE_CONTACT_TYPE,
   updateContact,
 } from './contacts';
+export { CREATE_DEAL_TYPE, createDeal } from './deals';
 export { LIST_OWNERS_TYPE, listOwners } from './owners';
 
 import { createContact, getContact, listContacts, searchContacts, updateContact } from './contacts';
+import { createDeal } from './deals';
 import { listOwners } from './owners';
 
 /** Every HubSpot action, for catalog builds and registration. */
@@ -30,5 +35,6 @@ export const hubspotActions = [
   updateContact,
   listContacts,
   searchContacts,
+  createDeal,
   listOwners,
 ] as const;

@@ -36,12 +36,18 @@ const UPDATE_MUTATION = `mutation IssueUpdate($id: String!, $input: IssueUpdateI
 
 const GET_QUERY = `query Issue($id: String!) { issue(id: $id) { ${ISSUE_FIELDS} } }`;
 
-const LIST_QUERY = `query Issues($filter: IssueFilter, $first: Int) {
-  issues(filter: $filter, first: $first) {
+const LIST_QUERY = `query Issues($filter: IssueFilter, $first: Int, $after: String) {
+  issues(filter: $filter, first: $first, after: $after) {
     nodes { ${ISSUE_FIELDS} }
     pageInfo { hasNextPage endCursor }
   }
 }`;
+
+/** One page of a Linear issue connection — nodes plus the cursor to advance. */
+interface IssueConnection {
+  nodes: LinearIssue[];
+  pageInfo: { hasNextPage: boolean; endCursor?: string | null };
+}
 
 function splitIds(value: string | undefined): string[] | undefined {
   if (!value) return undefined;
@@ -159,8 +165,9 @@ export const getIssue = defineAction({
 });
 
 /**
- * List issues, optionally scoped to a team (live picker) or assignee. Returns one
- * page (up to `limit`). The team filter picker is independent, so it is live.
+ * List issues, optionally scoped to a team (live picker) or assignee, following
+ * Linear's GraphQL `pageInfo.endCursor` connection cursor up to `limit`. The team
+ * and assignee filter pickers are independent, so both are live.
  */
 export const listIssues = defineAction({
   type: LIST_ISSUES_TYPE,
@@ -184,10 +191,24 @@ export const listIssues = defineAction({
     const filter: Record<string, unknown> = {};
     if (props.teamId !== undefined) filter.team = { id: { eq: props.teamId } };
     if (props.assigneeId !== undefined) filter.assignee = { id: { eq: props.assigneeId } };
-    const data = await linearGraphql<{ issues: { nodes: LinearIssue[] } }>(http, auth, LIST_QUERY, {
-      first: props.limit ?? 50,
-      ...(Object.keys(filter).length > 0 ? { filter } : {}),
-    });
-    return { issues: data.issues.nodes, count: data.issues.nodes.length };
+    const hasFilter = Object.keys(filter).length > 0;
+    const max = props.limit ?? 50;
+    const issues: LinearIssue[] = [];
+    let cursor: string | null = null;
+    // Cap the page walk so a runaway cursor can't loop forever (mirrors paginate()).
+    for (let page = 0; page < 20 && issues.length < max; page += 1) {
+      const variables: Record<string, unknown> = {
+        first: Math.min(100, max - issues.length),
+        after: cursor,
+        ...(hasFilter ? { filter } : {}),
+      };
+      const conn = (await linearGraphql<{ issues: IssueConnection }>(http, auth, LIST_QUERY, variables))
+        .issues;
+      issues.push(...conn.nodes);
+      if (!conn.pageInfo.hasNextPage || !conn.pageInfo.endCursor) break;
+      cursor = conn.pageInfo.endCursor;
+    }
+    const capped = issues.slice(0, max);
+    return { issues: capped, count: capped.length };
   },
 });

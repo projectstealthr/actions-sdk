@@ -2,6 +2,7 @@ import { defineAction } from '../../core/action';
 import type { JsonValue } from '../../core/http/types';
 import { dropdown, json, number, shortText } from '../../core/props';
 import {
+  collectNotionQuery,
   databaseOptions,
   NOTION_API_BASE,
   NOTION_HEADERS,
@@ -70,9 +71,10 @@ export const getDatabase = defineAction({
 });
 
 /**
- * Query the rows (pages) of a database with optional filter/sorts. The database
- * picker is live; the filter is raw Notion JSON (its shape depends on the DB's
- * own columns, which a picker can't yet resolve — see docs/verification-queue.md).
+ * Query the rows (pages) of a database with optional filter/sorts, following
+ * Notion's `start_cursor` pagination up to `limit`. The database picker is live;
+ * the filter is raw Notion JSON (its shape depends on the DB's own columns, which
+ * a picker can't yet resolve — see docs/verification-queue.md).
  */
 export const queryDatabase = defineAction({
   type: QUERY_DATABASE_TYPE,
@@ -87,16 +89,19 @@ export const queryDatabase = defineAction({
     }),
     filter: json({ label: 'Filter', description: 'Raw Notion filter object.', required: false }),
     sorts: json({ label: 'Sorts', description: 'Raw Notion sorts array.', required: false }),
-    pageSize: number({ label: 'Max results', required: false, defaultValue: 50 }),
+    limit: number({ label: 'Max results', required: false, defaultValue: 100 }),
   },
-  async run({ auth, props, http }): Promise<{ results: NotionObject[]; has_more: boolean }> {
-    const body: Record<string, JsonValue> = { page_size: props.pageSize ?? 50 };
+  async run({ auth, props, http }): Promise<{ pages: NotionObject[]; count: number }> {
+    const body: Record<string, JsonValue> = {};
     if (props.filter !== undefined) body.filter = props.filter;
     if (props.sorts !== undefined) body.sorts = props.sorts;
-    const res = await http.post<NotionSearchResult>(
+    const pages = await collectNotionQuery(
+      http,
+      auth,
       `${NOTION_API_BASE}/databases/${encodeURIComponent(props.databaseId)}/query`,
-      { auth, headers: NOTION_HEADERS, body },
+      body,
+      props.limit ?? 100,
     );
-    return { results: res.data.results, has_more: res.data.has_more };
+    return { pages, count: pages.length };
   },
 });

@@ -126,17 +126,27 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 ### linear — PENDING (6 actions, 2 live pickers)
 
 - **Actions:** `create_issue`, `update_issue`, `get_issue`, `list_issues`,
-  `create_comment`, `list_teams`. GraphQL (single endpoint).
+  `create_comment`, `list_teams`. GraphQL (single endpoint). All ids unchanged
+  this batch.
+- **`list_issues` now paginates** via Linear's GraphQL connection cursor
+  (`pageInfo.endCursor` → `$after`) up to `limit`, returning `{ issues, count }`.
 - **Auth:** personal API key in the `Authorization` header (no `Bearer`); managed
   OAuth attaches server-side. Base is fixed (`api.linear.app/graphql`).
 - **Live pickers (work today):** team picker + assignee picker (both independent
   of other props). `picker-blocked`: state / label / project pickers (team-scoped
   refreshers) — id inputs for now.
-- **Offline:** `src/actions/linear/linear.spec.ts` (8 golden cases incl. the
-  GraphQL "errors at HTTP 200" path and the team-picker resolver).
+- **Offline:** `src/actions/linear/linear.spec.ts` (9 golden cases incl. the
+  GraphQL "errors at HTTP 200" path, the endCursor pagination walk, and the
+  team-picker resolver).
 - **Smoke (read, benign):** `list_teams` (no props) — also exercises the picker
   resolver. Or `list_issues` with `limit: 1`.
 - **Connection needed:** Linear — Composio toolkit `linear`, managed OAUTH2.
+  **No connection on the shared account yet → PENDING.**
+
+  ```bash
+  export LINEAR_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/linear/linear.live.spec.ts
+  ```
 
 ### stripe — PENDING (6 read actions + live customer picker)
 
@@ -251,17 +261,35 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   text inputs for now.
 - **Catalog note:** registered in its own `index.ts` (`zendeskActions`).
 
-### hubspot — PENDING (6 actions, live owner picker)
+### hubspot — PENDING (7 actions, live owner + pipeline pickers)
 
 - **Actions:** `create_contact`, `get_contact`, `update_contact`,
-  `list_contacts`, `search_contacts`, `list_owners`. CRM v3, fixed base
-  `api.hubapi.com`, JSON (writes work); `paging.next.after` cursor pagination.
+  `list_contacts`, `search_contacts`, `create_deal`, `list_owners`. CRM v3, fixed
+  base `api.hubapi.com`, JSON (writes work); `paging.next.after` cursor pagination.
+- **Ids (this batch):** `create_deal` is a **coined** id `hubspot.create_deal`
+  (AP's `hubspot.create-deal` is hyphenated → not a valid action namespace, so it
+  ships alongside rather than replacing). The others kept their prior coined ids.
+- **`search_contacts` now paginates** via the CRM v3 search `paging.next.after`
+  cursor (POST-body cursor, small hand-rolled loop) up to `limit`, returning
+  `{ contacts, count, total }`.
 - **Auth:** OAuth / private-app token as Bearer.
-- **Live picker (works today):** owner picker (independent) on `create_contact`.
-- **Offline:** `src/actions/hubspot/hubspot.spec.ts` (5 golden cases incl. the
-  `{ properties }` write shape, cursor pagination, filterGroups search, owner picker).
-- **Smoke (read, benign):** `list_owners` (no props) — also exercises the picker.
+- **Live pickers (work today):** owner picker (independent) on `create_contact`
+  and `create_deal`; **deal-pipeline picker** (independent, `GET /crm/v3/pipelines/deals`)
+  on `create_deal`. `picker-blocked`: `dealstage` depends on the chosen pipeline →
+  text input for now.
+- **Offline:** `src/actions/hubspot/hubspot.spec.ts` (8 golden cases incl. the
+  `{ properties }` write shape, list + search cursor pagination, filterGroups
+  search, the create_deal property mapping, owner + pipeline pickers).
+- **Smoke (read, benign):** `list_owners` (no props) — also exercises the owner +
+  pipeline pickers.
 - **Connection needed:** HubSpot — Composio toolkit `hubspot`, managed OAUTH2.
+  **No connection on the shared account yet → PENDING.**
+
+  ```bash
+  export HUBSPOT_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/hubspot/hubspot.live.spec.ts
+  ```
+
 - **Catalog note:** registered in its own `index.ts` (`hubspotActions`).
 
 ---
@@ -290,21 +318,37 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   `COMPOSIO_API_KEY`; the send is gated behind `GMAIL_LIVE_SEND=1`). Offline:
   `src/actions/gmail/gmail.spec.ts`.
 
-### notion — PENDING (6 actions, live database picker)
+### notion — PENDING (7 actions, live database picker)
 
 - **Actions:** `search`, `get_database`, `query_database`, `create_page`,
-  `get_page`, `update_page`. Fixed base `api.notion.com/v1`, JSON; pins
-  `Notion-Version: 2022-06-28`.
+  `get_page`, `update_page`, `append_to_page` (append block children). Fixed base
+  `api.notion.com/v1`, JSON; pins `Notion-Version: 2022-06-28`.
+- **Ids (this batch):** `append_to_page` **reuses** the AP catalog id
+  `notion.append_to_page` (Notion's `PATCH /v1/blocks/{block_id}/children`; a page
+  IS a block) so the dedup replaces that AP row. The other six kept their prior
+  coined underscore ids (AP's are camelCase/`find_*`, not reusable).
+- **`query_database` now paginates** via Notion's `start_cursor` (POST-body
+  cursor, small hand-rolled loop) up to `limit`, returning `{ pages, count }` —
+  matching the paginating-read convention of the other list actions.
 - **Auth:** integration/OAuth token as Bearer.
 - **Live picker (works today):** database picker — independent (searches objects
   filtered to databases) and honours the loader `search` term; used by
   get_database / query_database / create_page.
 - **`picker-blocked`:** per-column property pickers depend on the chosen
-  database's schema → `properties`/`filter` are raw Notion JSON for now.
-- **Offline:** `src/actions/notion/notion.spec.ts` (4 golden cases incl. the
-  database picker with search + the plain-title helper).
-- **Smoke (read, benign):** `search` with `filter: 'database'` (no query).
+  database's schema → `properties`/`filter`/`children` are raw Notion JSON for now.
+- **Offline:** `src/actions/notion/notion.spec.ts` (6 golden cases incl. the
+  start_cursor pagination, the append-block-children PATCH, the database picker
+  with search + the plain-title helper).
+- **Smoke (read, benign):** `search` with `filter: 'database'` (no query) — also
+  exercises the database picker.
 - **Connection needed:** Notion — Composio toolkit `notion`, managed OAUTH2.
+  **No connection on the shared account yet → PENDING.**
+
+  ```bash
+  export NOTION_CONNECTED_ACCOUNT_ID="ca_...."
+  ORCHESTR_LIVE=1 npx jest src/actions/notion/notion.live.spec.ts
+  ```
+
 - **Catalog note:** registered in its own `index.ts` (`notionActions`).
 
 ---
@@ -415,20 +459,26 @@ token) with byte-identical action code, so they are NOT in `MANAGED_BROKEN_APPS`
 exact-type rule, and AP's other actions stay as fallbacks). All PENDING — no
 connection on the shared account yet.
 
-### asana — PENDING (5 actions, live project + workspace pickers)
+### asana — PENDING (6 actions, live project + workspace pickers)
 
 - **Actions:** `create_task`, `get_task`, `update_task`, `list_tasks` (by project),
-  `add_comment`. API v1, JSON with the `{ data: … }` request/response envelope;
-  `create_task` reuses the AP id, the rest are clean ids (AP ships only
-  `create_task`). `list_tasks` follows Asana's `next_page.offset` cursor.
+  `list_projects` (optionally by workspace), `add_comment`. API v1, JSON with the
+  `{ data: … }` request/response envelope; `create_task` reuses the AP id, the rest
+  are clean ids (AP ships only `create_task`). `list_tasks` + `list_projects` follow
+  Asana's `next_page.offset` cursor.
+- **Ids (this batch):** `list_projects` is a **coined** id `asana.list_projects`
+  (AP ships no Asana list-projects action). Helpers renamed to the codebase's
+  `list<App><Resource>` convention (`listAsanaProjects`/`listAsanaWorkspaces`) so
+  the short verb `listProjects` names the action.
 - **Auth:** OAuth2 Bearer (managed) or a BYO personal access token attached the
   same way. Fixed base `app.asana.com/api/1.0`.
 - **Live pickers (work today):** project picker (`/projects`) + workspace picker
   (`/workspaces`) — both independent of other props.
-- **Offline:** `src/actions/asana/asana.spec.ts` (6 golden cases incl. the envelope
-  wrap/unwrap, project→`projects[]` mapping, offset pagination, the project picker).
-- **Smoke (read, benign):** `list_tasks` on any project, or `listWorkspaces` — the
-  live spec loads workspaces + projects and resolves the picker.
+- **Offline:** `src/actions/asana/asana.spec.ts` (7 golden cases incl. the envelope
+  wrap/unwrap, project→`projects[]` mapping, list_tasks + list_projects offset
+  pagination, the project picker).
+- **Smoke (read, benign):** `list_projects` (no props), `list_tasks` on any
+  project — the live spec loads workspaces + projects and resolves the picker.
 - **Connection needed:** Asana — Composio toolkit `asana`, managed OAUTH2.
 
   ```bash

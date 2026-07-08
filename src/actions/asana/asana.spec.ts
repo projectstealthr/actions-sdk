@@ -1,6 +1,7 @@
 import { HttpClient } from '../../core/http/client';
 import type { NormalizedRequest, NormalizedResponse } from '../../core/http/types';
 import { FakeTransport, stubAuth } from '../../testing/fakes';
+import { listProjects } from './projects';
 import { addComment, createTask, getTask, listTasks, updateTask } from './tasks';
 
 /**
@@ -87,6 +88,25 @@ describe('asana.add_comment', () => {
     expect(out.text).toBe('nice');
     expect(transport.requests[0]!.url).toContain('/tasks/t1/stories');
     expect(transport.requests[0]!.body).toEqual({ data: { text: 'nice' } });
+  });
+});
+
+describe('asana.list_projects', () => {
+  it('scopes to a workspace and follows the offset cursor', async () => {
+    const { auth, http, transport } = fake((_req, i) =>
+      i === 0
+        ? {
+            status: 200,
+            headers: {},
+            data: { data: [{ gid: 'p1', name: 'A' }], next_page: { offset: 'OFF2' } },
+          }
+        : { status: 200, headers: {}, data: { data: [{ gid: 'p2', name: 'B' }], next_page: null } },
+    );
+    const out = await listProjects.execute({ auth, http, props: { workspace: 'w1', limit: 100 } });
+    expect(out.count).toBe(2);
+    expect(out.projects.map((p) => p.gid)).toEqual(['p1', 'p2']);
+    expect(transport.requests[0]!.url).toContain('workspace=w1');
+    expect(transport.requests[1]!.url).toContain('offset=OFF2');
   });
 });
 

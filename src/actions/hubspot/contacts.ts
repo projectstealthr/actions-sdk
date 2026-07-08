@@ -149,9 +149,19 @@ export const listContacts = defineAction({
   },
 });
 
+/** The CRM v3 search envelope: matched objects, the overall `total`, and an `after` cursor. */
+interface HubspotSearchResponse {
+  results: HubspotObject[];
+  total: number;
+  paging?: { next?: { after?: string } };
+}
+
 /**
  * Search contacts by a free-text `query`, or by a single property filter
- * (`propertyName` OPERATOR `value`). Returns one page.
+ * (`propertyName` OPERATOR `value`), following the CRM v3 search `paging.next.after`
+ * cursor up to `limit`. Search pages inside the POST body (the cursor is `after`
+ * in, `paging.next.after` out), so this is a small hand-rolled POST loop rather
+ * than the GET-oriented `paginate` helper.
  */
 export const searchContacts = defineAction({
   type: SEARCH_CONTACTS_TYPE,
@@ -184,11 +194,11 @@ export const searchContacts = defineAction({
     value: shortText({ label: 'Value', required: false }),
     limit: number({ label: 'Max results', required: false, defaultValue: 20 }),
   },
-  async run({ auth, props, http }): Promise<{ contacts: HubspotObject[]; total: number }> {
-    const body: Record<string, JsonValue> = { limit: props.limit ?? 20 };
-    if (props.query !== undefined) body.query = props.query;
+  async run({ auth, props, http }): Promise<{ contacts: HubspotObject[]; count: number; total: number }> {
+    const base: Record<string, JsonValue> = {};
+    if (props.query !== undefined) base.query = props.query;
     if (props.propertyName !== undefined && props.value !== undefined) {
-      body.filterGroups = [
+      base.filterGroups = [
         {
           filters: [
             { propertyName: props.propertyName, operator: props.operator ?? 'EQ', value: props.value },
@@ -196,10 +206,20 @@ export const searchContacts = defineAction({
         },
       ];
     }
-    const res = await http.post<{ results: HubspotObject[]; total: number }>(`${CONTACTS_URL}/search`, {
-      auth,
-      body,
-    });
-    return { contacts: res.data.results, total: res.data.total };
+    const max = props.limit ?? 20;
+    const contacts: HubspotObject[] = [];
+    let after: string | undefined;
+    let total = 0;
+    for (let page = 0; page < 25 && contacts.length < max; page += 1) {
+      const body: Record<string, JsonValue> = { ...base, limit: Math.min(100, max - contacts.length) };
+      if (after !== undefined) body.after = after;
+      const res = await http.post<HubspotSearchResponse>(`${CONTACTS_URL}/search`, { auth, body });
+      total = res.data.total ?? total;
+      contacts.push(...res.data.results);
+      const next = res.data.paging?.next?.after;
+      if (next === undefined) break;
+      after = next;
+    }
+    return { contacts: contacts.slice(0, max), count: Math.min(contacts.length, max), total };
   },
 });

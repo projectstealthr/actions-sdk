@@ -74,3 +74,34 @@ export async function databaseOptions(
   });
   return res.data.results.map((database) => ({ label: plainTitle(database), value: database.id }));
 }
+
+/**
+ * Follow Notion's `start_cursor` list pagination to completion (capped),
+ * collecting objects up to `maxResults`. Notion pages inside a POST body — the
+ * cursor is `start_cursor` in, `next_cursor`/`has_more` out — so this is a small
+ * hand-rolled POST loop rather than the GET-oriented `paginate` helper, exactly
+ * the per-action shape FRAMEWORK-NOTES §1 anticipated. `maxPages` is a hard
+ * safety cap against a runaway cursor.
+ */
+export async function collectNotionQuery(
+  http: HttpClient,
+  auth: AuthHandle,
+  url: string,
+  body: Record<string, JsonValue>,
+  maxResults: number,
+  maxPages = 25,
+): Promise<NotionObject[]> {
+  const objects: NotionObject[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < maxPages; page += 1) {
+    const remaining = maxResults - objects.length;
+    const pageBody: Record<string, JsonValue> = { ...body, page_size: Math.min(100, Math.max(1, remaining)) };
+    if (cursor) pageBody.start_cursor = cursor;
+    const res = await http.post<NotionSearchResult>(url, { auth, headers: NOTION_HEADERS, body: pageBody });
+    objects.push(...res.data.results);
+    if (objects.length >= maxResults) return objects.slice(0, maxResults);
+    if (!res.data.has_more || !res.data.next_cursor) return objects;
+    cursor = res.data.next_cursor;
+  }
+  return objects;
+}

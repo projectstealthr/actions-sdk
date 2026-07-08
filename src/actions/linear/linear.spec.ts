@@ -81,6 +81,26 @@ describe('linear.list_issues', () => {
     expect(vars.filter).toEqual({ team: { id: { eq: 'team_1' } }, assignee: { id: { eq: 'user_1' } } });
     expect(vars.first).toBe(50);
   });
+
+  it('follows the endCursor across pages up to the limit', async () => {
+    let call = 0;
+    const { auth, http, transport } = fake(() => {
+      const page = call++;
+      const node = { id: `iss_${page}`, identifier: `ENG-${page}`, title: 't', url: 'u' };
+      return {
+        status: 200,
+        headers: {},
+        data:
+          page === 0
+            ? { data: { issues: { nodes: [node], pageInfo: { hasNextPage: true, endCursor: 'cur1' } } } }
+            : { data: { issues: { nodes: [node], pageInfo: { hasNextPage: false, endCursor: null } } } },
+      };
+    });
+    const out = await listIssues.execute({ auth, http, props: { limit: 100 } });
+    expect(out.count).toBe(2);
+    // The second request carries the first page's endCursor as `after`.
+    expect(variables(transport.requests[1]!).after).toBe('cur1');
+  });
 });
 
 describe('linear.create_comment', () => {

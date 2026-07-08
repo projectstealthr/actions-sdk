@@ -5,8 +5,8 @@ export {
   type AsanaTask,
   asanaAuth,
   asanaGet,
-  listProjects,
-  listWorkspaces,
+  listAsanaProjects,
+  listAsanaWorkspaces,
   projectOptions,
   projectProp,
   workspaceOptions,
@@ -24,8 +24,10 @@ export {
   UPDATE_TASK_TYPE,
   updateTask,
 } from './tasks';
+export { LIST_PROJECTS_TYPE, listProjects } from './projects';
 
+import { listProjects } from './projects';
 import { addComment, createTask, getTask, listTasks, updateTask } from './tasks';
 
 /** Every Asana action, for catalog builds and registration. */
-export const asanaActions = [createTask, getTask, updateTask, listTasks, addComment] as const;
+export const asanaActions = [createTask, getTask, updateTask, listTasks, listProjects, addComment] as const;
