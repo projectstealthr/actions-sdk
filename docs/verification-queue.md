@@ -28,6 +28,57 @@ also have **no connection** on the shared account, so all four are **PENDING**
 (authored + unit-tested; each carries a turnkey smoke command below). `trello`
 was **NOT shipped** — see the framework gap.
 
+## Live-spec matrix (consent sprint) — one command per app
+
+Every app below now ships a `src/actions/<app>/<app>.live.spec.ts` that **self-skips**
+when its env is absent (so `pnpm check` stays green with no connections) and **fully
+verifies** — READ smoke plus, where a safe reversible write is expressible, a
+WRITE → read-back → cleanup cycle — once its sandbox account is connected. Base
+command:
+
+```bash
+cd actions-sdk
+export COMPOSIO_API_KEY="$(grep -E '^COMPOSIO_API_KEY=' ../workflow-service/.env | cut -d= -f2- | tr -d '\"[:space:]')"
+export ORCHESTR_LIVE=1
+export <APP>_CONNECTED_ACCOUNT_ID="ca_…"          # from the connected-accounts list
+# …plus any extra env in the table below to unlock that app's write cycle…
+npx jest src/actions/<app>/<app>.live.spec.ts
+```
+
+Extra env is `KEY=value` on the same command line. Writes are **opt-in** — the base
+command runs READs and self-skips the write until you add the `*_LIVE_WRITE=1` flag
+(or the required id) so an accidental run never mutates anything.
+
+| App | Extra env (beyond `<APP>_CONNECTED_ACCOUNT_ID` + Composio) | Write cycle | Cleanup |
+|---|---|---|---|
+| **jira** | `JIRA_INSTANCE_URL` (req, read+write); write: `JIRA_LIVE_WRITE=1` + `JIRA_PROJECT_KEY` (+ opt `JIRA_ISSUE_TYPE`, default Task) | `create_issue` → `get_issue` | **none** — no authored delete + deleting needs elevated perms; issue is **left** and its key logged (guard-rail) |
+| **airtable** | write: `AIRTABLE_BASE_ID` + `AIRTABLE_TABLE_ID` (table without required fields) | `create_record` (empty `{}`) → `get_record` → `delete_record` | authored `delete_record` (self-cleaning) |
+| **salesforce** | `SALESFORCE_INSTANCE_URL` (req, read+write; opt `SALESFORCE_API_VERSION`); write: `SALESFORCE_LIVE_WRITE=1` | create `Contact` (LastName only) → `get_record` → `delete_record` | authored `delete_record` (self-cleaning) |
+| **calendly** | — | **read-only** (only write is `cancel` — destructive/irreversible; no create verb) | n/a |
+| **intercom** | — | **read-only** (`create_contact` works, but no authored archive/delete → can't clean up) | n/a |
+| **mailchimp** | `MAILCHIMP_SERVER_PREFIX` (req, e.g. us19) | **read-only** (`add_member` works, but no authored delete) | n/a |
+| **zendesk** | `ZENDESK_SUBDOMAIN` (req) | **read-only** (`create_ticket` works, but no authored delete) | n/a |
+| **stripe** | — | **read-only** (writes `form-body-blocked`, framework gap #2) | n/a |
+| **asana** | write: `ASANA_LIVE_WRITE=1` | `create_task` (first workspace) → `get_task` | REST teardown `DELETE /tasks/{gid}` (no authored delete) |
+| **clickup** | write: `CLICKUP_LIVE_WRITE=1` (opt `CLICKUP_LIST_ID`, else first list found) | `create_task` → `get_task` | REST teardown `DELETE /task/{id}` (no authored delete) |
+| **todoist** | write: `TODOIST_LIVE_WRITE=1` | `create_task` (inbox) → `find_task` (read-back) | REST teardown `DELETE /tasks/{id}` (authored close leaves a completed task) |
+| **hubspot** | write: `HUBSPOT_LIVE_WRITE=1` | `create_contact` (unique example.com email) → `get_contact` | REST teardown `DELETE …/contacts/{id}` → recycling bin (no authored delete) |
+| **linear** | write: `LINEAR_LIVE_WRITE=1` | `create_issue` (first team) → `get_issue` | GraphQL teardown `issueArchive` — recoverable (no authored archive) |
+| **notion** | write: `NOTION_DATABASE_ID` (a database the integration can write) | `get_database` (title prop) → `create_page` (row) → `get_page` | authored `update_page` `archived:true` → trash (self-cleaning) |
+| **dropbox** | write: `DROPBOX_LIVE_WRITE=1` | `create_new_dropbox_folder` → `get_file_metadata` | REST teardown `/files/delete_v2` (no authored delete; metadata-only, no binary) |
+| **calendar** | write: `CALENDAR_LIVE_WRITE=1` (account env is `GOOGLECALENDAR_CONNECTED_ACCOUNT_ID`) | `create` → `update` → `get` → `delete` event on `primary` | authored `delete_event` (self-cleaning) |
+| **zoom** | write: `ZOOM_LIVE_WRITE=1` | `create_meeting` → `update` → `get` → `delete` | authored `delete_meeting` (self-cleaning) |
+| **outlook** | write: `OUTLOOK_LIVE_SEND=1` + `OUTLOOK_TEST_ADDRESS` (send to SELF) | `send_email` to the owner's own address | n/a — send-to-self; no delete (guard-rail: send/draft only) |
+| **typeform** | — | **read-only** (no safe reversible create — a form isn't a throwaway; responses go via the public form) | n/a |
+| **gmail** | write: `GMAIL_LIVE_SEND=1` (send to SELF) — already LIVE-VERIFIED | `send_email` to the owner's own address | n/a — send-to-self |
+
+**Teardown note.** Where an app ships no authored delete/archive action, the spec
+cleans up the exact resource it just created via a raw REST/GraphQL call on the same
+`http` + `auth` handle (documented per app above). This is test teardown of a
+throwaway the spec owns — not a new product action (no offline golden test, no
+catalog entry) — so the sandbox stays tidy and re-runs are idempotent without
+widening the authored surface.
+
 ## Status legend
 
 - **LIVE-VERIFIED** — executed against the real API, returned real data.

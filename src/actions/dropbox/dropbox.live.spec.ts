@@ -2,6 +2,7 @@ import type { AuthHandle } from '../../core/auth';
 import { createComposioAuth } from '../../core/auth-factories';
 import { HttpClient } from '../../core/http/client';
 import { composioApiKey, liveComposioDescribe } from '../../testing/live';
+import { DROPBOX_API_BASE } from './common';
 import { createFolder, getFileMetadata, listFolder, search } from './files';
 
 /**
@@ -14,9 +15,11 @@ import { createFolder, getFileMetadata, listFolder, search } from './files';
  * connection on the shared account yet, so this self-skips until one is created
  * (verification queue: dropbox = PENDING).
  *
- * The read path (list_folder/search/get_metadata) is benign. The create-folder
- * round-trip is a real WRITE on a throwaway folder, gated behind
- * DROPBOX_LIVE_WRITE=1 and always in a disposable path.
+ * The read path (list_folder/search/get_metadata) is benign. The
+ * create→get→delete round-trip is a real WRITE on a throwaway folder, gated behind
+ * DROPBOX_LIVE_WRITE=1 and always cleaned up. Dropbox ships no authored delete
+ * action (metadata-only surface, no binary), so cleanup is a REST teardown
+ * (`/files/delete_v2`) of the exact folder created, keeping re-runs idempotent.
  */
 const DROPBOX_ACCOUNT = process.env.DROPBOX_CONNECTED_ACCOUNT_ID;
 
@@ -56,14 +59,18 @@ liveComposioDescribe('dropbox — live via Composio managed proxy', () => {
 
   const maybeWrite = DROPBOX_ACCOUNT && process.env.DROPBOX_LIVE_WRITE === '1' ? it : it.skip;
   maybeWrite(
-    'creates a throwaway folder and gets its metadata back',
+    'creates a throwaway folder, gets its metadata, then deletes it (REST teardown)',
     async () => {
       const path = `/orchestr-sdk-live-${Date.now()}`;
       const folder = await createFolder.execute({ auth, http, props: { path } });
       expect(folder['.tag']).toBe('folder');
-      const meta = await getFileMetadata.execute({ auth, http, props: { path } });
-      expect(meta.name).toBe(folder.name);
-      console.log(`live: dropbox.create_new_dropbox_folder → ${folder.path_display ?? path}`);
+      try {
+        const meta = await getFileMetadata.execute({ auth, http, props: { path } });
+        expect(meta.name).toBe(folder.name);
+      } finally {
+        await http.post(`${DROPBOX_API_BASE}/files/delete_v2`, { auth, body: { path } });
+      }
+      console.log(`live: dropbox create→get→delete ${folder.path_display ?? path}`);
     },
     60_000,
   );

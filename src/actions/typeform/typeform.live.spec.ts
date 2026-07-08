@@ -12,6 +12,12 @@ import { listResponses } from './responses';
  * id (TYPEFORM_CONNECTED_ACCOUNT_ID) — there is NO Typeform connection on the
  * shared account yet, so this self-skips until one is created (verification queue:
  * typeform = PENDING).
+ *
+ * WRITE cycle: none — per the batch guard-rail, Typeform stays READ-ONLY. Its
+ * authored actions are all reads; there is no safe reversible create (a Typeform
+ * form isn't a disposable throwaway, and submitting a response is done through the
+ * public rendered form, not an authored API action). Reads: forms + the form
+ * picker, and a form's fields + responses.
  */
 const TYPEFORM_ACCOUNT = process.env.TYPEFORM_CONNECTED_ACCOUNT_ID;
 
