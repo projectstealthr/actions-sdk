@@ -140,3 +140,19 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **Catalog note:** registered in `src/actions/airtable/index.ts`
   (`airtableActions`); top-level `catalogActions` aggregation deferred (a parallel
   framework workstream holds `src/actions/index.ts` open — reconcile at the end).
+
+### calendly — PENDING (6 actions, live event picker)
+
+- **Actions:** `get_current_user`, `list_event_types`, `list_scheduled_events`,
+  `get_scheduled_event`, `list_event_invitees`, `cancel_scheduled_event`. API v2,
+  fixed base `api.calendly.com`, JSON. Reads auto-scope to the connected user via
+  `/users/me`; pagination follows `pagination.next_page` (full-URL cursor).
+- **Auth:** personal access token / managed OAuth as Bearer.
+- **Live picker (works today):** scheduled-event picker — independent (it resolves
+  the user URI itself), used by get / list_invitees / cancel.
+- **Offline:** `src/actions/calendly/calendly.spec.ts` (5 golden cases incl.
+  next_page pagination + the event picker).
+- **Smoke (read, benign):** `get_current_user` (no props).
+- **Connection needed:** Calendly — Composio toolkit `calendly`, managed OAUTH2.
+- **Catalog note:** registered in its own `index.ts` (`calendlyActions`); top-level
+  aggregation deferred (shared file held open by a parallel workstream).
