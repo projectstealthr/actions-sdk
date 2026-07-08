@@ -65,11 +65,37 @@ export async function listAsanaWorkspaces(http: HttpClient, auth: AuthHandle): P
   return res.data.data ?? [];
 }
 
-/** Fetch the projects the user can access — shared by the list read and the project picker. */
-export async function listAsanaProjects(http: HttpClient, auth: AuthHandle): Promise<AsanaResource[]> {
+/**
+ * Resolve a usable workspace gid: the caller's explicit choice, else the first
+ * workspace on the account. Asana's `/projects` (and most list endpoints) reject
+ * a call with no `workspace`/`team` scope (HTTP 400), so every project read must
+ * carry one — and most accounts have exactly one workspace, so defaulting is safe.
+ */
+export async function resolveWorkspaceGid(
+  http: HttpClient,
+  auth: AuthHandle,
+  workspace?: string,
+): Promise<string | undefined> {
+  if (workspace) return workspace;
+  const workspaces = await listAsanaWorkspaces(http, auth);
+  return workspaces[0]?.gid;
+}
+
+/**
+ * Fetch projects in a workspace — shared by the list read and the project picker.
+ * Asana requires the `workspace` scope; when the caller doesn't pass one we fall
+ * back to the first workspace (see {@link resolveWorkspaceGid}).
+ */
+export async function listAsanaProjects(
+  http: HttpClient,
+  auth: AuthHandle,
+  workspace?: string,
+): Promise<AsanaResource[]> {
+  const ws = await resolveWorkspaceGid(http, auth, workspace);
+  if (!ws) return [];
   const res = await http.get<{ data?: AsanaResource[] }>(`${ASANA_API_BASE}/projects`, {
     auth,
-    query: { limit: 100, opt_fields: 'name', archived: false },
+    query: { workspace: ws, limit: 100, opt_fields: 'name', archived: false },
   });
   return res.data.data ?? [];
 }
@@ -83,9 +109,13 @@ export async function workspaceOptions(
   return workspaces.map((w) => ({ label: w.name, value: w.gid }));
 }
 
-/** Live project picker — independent (lists accessible projects), so it works today. */
-export async function projectOptions(http: HttpClient, auth: AuthHandle): Promise<DropdownOption<string>[]> {
-  const projects = await listAsanaProjects(http, auth);
+/** Live project picker — lists the first workspace's projects (or a given one). */
+export async function projectOptions(
+  http: HttpClient,
+  auth: AuthHandle,
+  workspace?: string,
+): Promise<DropdownOption<string>[]> {
+  const projects = await listAsanaProjects(http, auth, workspace);
   return projects.map((p) => ({ label: p.name, value: p.gid }));
 }
 

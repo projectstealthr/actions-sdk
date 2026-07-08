@@ -2,7 +2,13 @@ import { defineAction } from '../../core/action';
 import { cursorInBody, paginate } from '../../core/http/pagination';
 import type { QueryValue } from '../../core/http/types';
 import { number } from '../../core/props';
-import { ASANA_API_BASE, type AsanaResource, asanaAuth, workspaceProp } from './common';
+import {
+  ASANA_API_BASE,
+  type AsanaResource,
+  asanaAuth,
+  resolveWorkspaceGid,
+  workspaceProp,
+} from './common';
 
 /** Coined clean id — AP ships no Asana "list projects" action, so this is a new underscore id. */
 export const LIST_PROJECTS_TYPE = 'asana.list_projects';
@@ -22,8 +28,16 @@ export const listProjects = defineAction({
     limit: number({ label: 'Max results', required: false, defaultValue: 100 }),
   },
   async run({ auth, props, http }): Promise<{ projects: AsanaResource[]; count: number }> {
-    const query: Record<string, QueryValue> = { limit: 100, opt_fields: 'name', archived: false };
-    if (props.workspace !== undefined) query.workspace = props.workspace;
+    // Asana's /projects rejects a call with no workspace/team scope (400), so
+    // resolve the caller's workspace or default to the first one.
+    const workspace = await resolveWorkspaceGid(http, auth, props.workspace);
+    if (!workspace) return { projects: [], count: 0 };
+    const query: Record<string, QueryValue> = {
+      workspace,
+      limit: 100,
+      opt_fields: 'name',
+      archived: false,
+    };
     const projects = await paginate<AsanaResource>({
       http,
       auth,
