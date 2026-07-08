@@ -78,3 +78,18 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   connection uses.
 - **`picker-blocked`:** project + issue-type pickers (need `instanceUrl` / a
   `projectId` refresher) — authored as text props for now.
+
+### linear — PENDING (6 actions, 2 live pickers)
+
+- **Actions:** `create_issue`, `update_issue`, `get_issue`, `list_issues`,
+  `create_comment`, `list_teams`. GraphQL (single endpoint).
+- **Auth:** personal API key in the `Authorization` header (no `Bearer`); managed
+  OAuth attaches server-side. Base is fixed (`api.linear.app/graphql`).
+- **Live pickers (work today):** team picker + assignee picker (both independent
+  of other props). `picker-blocked`: state / label / project pickers (team-scoped
+  refreshers) — id inputs for now.
+- **Offline:** `src/actions/linear/linear.spec.ts` (8 golden cases incl. the
+  GraphQL "errors at HTTP 200" path and the team-picker resolver).
+- **Smoke (read, benign):** `list_teams` (no props) — also exercises the picker
+  resolver. Or `list_issues` with `limit: 1`.
+- **Connection needed:** Linear — Composio toolkit `linear`, managed OAUTH2.
