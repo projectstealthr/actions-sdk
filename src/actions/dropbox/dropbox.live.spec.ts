@@ -63,7 +63,11 @@ liveComposioDescribe('dropbox — live via Composio managed proxy', () => {
     async () => {
       const path = `/orchestr-sdk-live-${Date.now()}`;
       const folder = await createFolder.execute({ auth, http, props: { path } });
-      expect(folder['.tag']).toBe('folder');
+      // create_folder_v2 returns FolderMetadata ({ id, name, path_display }) —
+      // no `.tag` (that only appears in list-entry unions). The real proof the
+      // folder exists is the metadata read-back below.
+      expect(folder.path_display).toBe(path);
+      expect(folder.name).toBeTruthy();
       try {
         const meta = await getFileMetadata.execute({ auth, http, props: { path } });
         expect(meta.name).toBe(folder.name);
