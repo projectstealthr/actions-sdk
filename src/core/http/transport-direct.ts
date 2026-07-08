@@ -1,8 +1,10 @@
 import type { AuthScheme, DirectCredential } from '../auth';
 import { ActionError } from '../errors';
+import { encodeMultipart } from './multipart';
 import {
   appendQuery,
   type FetchLike,
+  isMultipartBody,
   type NormalizedRequest,
   type NormalizedResponse,
   resolveFetch,
@@ -37,10 +39,11 @@ export class DirectTransport implements Transport {
 
   async send(request: NormalizedRequest): Promise<NormalizedResponse> {
     const prepared = this.applyAuth(request);
+    const wireBody = this.encodeBody(prepared);
     const res = await this.fetchImpl(prepared.url, {
       method: prepared.method,
       headers: prepared.headers,
-      ...(prepared.body !== undefined ? { body: JSON.stringify(prepared.body) } : {}),
+      ...(wireBody !== undefined ? { body: wireBody } : {}),
       ...(prepared.signal ? { signal: prepared.signal } : {}),
     });
 
@@ -48,8 +51,30 @@ export class DirectTransport implements Transport {
     res.headers.forEach((value, key) => {
       headers[key.toLowerCase()] = value;
     });
+    // A binary read hands back the raw bytes verbatim — never text-decoded (that
+    // would corrupt them) — so an action can pass a downloaded file downstream.
+    if (prepared.responseType === 'binary') {
+      const bytes = Buffer.from(await res.arrayBuffer());
+      return { status: res.status, headers, data: bytes };
+    }
     const text = await res.text();
     return { status: res.status, headers, data: parseBody(text, headers['content-type']) };
+  }
+
+  /**
+   * Serialise the request body for the wire and set its Content-Type. A
+   * multipart body is encoded to raw bytes with a boundary header (mutating the
+   * already-copied `prepared.headers`); a JSON body is stringified; absent → no
+   * body.
+   */
+  private encodeBody(prepared: NormalizedRequest): string | Buffer | undefined {
+    if (prepared.body === undefined) return undefined;
+    if (isMultipartBody(prepared.body)) {
+      const { body, contentType } = encodeMultipart(prepared.body);
+      prepared.headers['content-type'] = contentType;
+      return body;
+    }
+    return JSON.stringify(prepared.body);
   }
 
   /** Attach the credential to a COPY of the request (never mutate the caller's object). */

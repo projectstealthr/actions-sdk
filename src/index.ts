@@ -42,12 +42,24 @@ export {
   type FetchLike,
   type FetchLikeResponse,
   type HttpMethod,
+  isMultipartBody,
   type JsonValue,
+  MULTIPART,
+  type MultipartBody,
+  type MultipartPart,
   type NormalizedRequest,
   type NormalizedResponse,
   type QueryValue,
+  type RequestBody,
+  type ResponseType,
   type Transport,
 } from './core/http/types';
+export {
+  buildMultipart,
+  encodeMultipart,
+  type MultipartFileInput,
+  type MultipartInput,
+} from './core/http/multipart';
 export { ComposioProxyTransport, type ComposioProxyTransportOptions } from './core/http/transport-composio';
 export { DirectTransport, type DirectTransportOptions } from './core/http/transport-direct';
 export {

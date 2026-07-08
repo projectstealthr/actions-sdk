@@ -1,5 +1,6 @@
 import { type AuthHandle, transportOf } from '../auth';
 import { ActionError, isRetryableStatus, type NormalizedFailure } from '../errors';
+import { buildMultipart, type MultipartInput } from './multipart';
 import { backoffDelay, DEFAULT_RETRY_POLICY, parseRetryAfter, type RetryPolicy, sleep } from './retry';
 import {
   appendQuery,
@@ -8,6 +9,8 @@ import {
   normalizeHeaders,
   type NormalizedRequest,
   type QueryValue,
+  type RequestBody,
+  type ResponseType,
 } from './types';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -20,6 +23,16 @@ export interface RequestOptions {
   headers?: Record<string, string>;
   query?: Record<string, QueryValue>;
   body?: JsonValue;
+  /**
+   * A multipart/form-data body (file upload). Mutually exclusive with `body`.
+   * Rides only the direct rail — the managed proxy rejects it loudly (JSON only).
+   */
+  multipart?: MultipartInput;
+  /**
+   * `'binary'` returns the raw response bytes as a `Buffer` in `data` (for
+   * downloading a file). Defaults to `'json'` (parse JSON, else raw text).
+   */
+  responseType?: ResponseType;
   /** Caller cancellation; composed with the per-request timeout. */
   signal?: AbortSignal;
   /** Override the client's default timeout for this call. */
@@ -94,6 +107,17 @@ export class HttpClient {
   ): Promise<HttpResponse<T>> {
     const transport = transportOf(options.auth);
     const headers = { ...this.defaultHeaders, ...normalizeHeaders(options.headers) };
+    if (options.body !== undefined && options.multipart !== undefined) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: 'pass either `body` (JSON) or `multipart` (files), not both',
+        retryable: false,
+      });
+    }
+    // The multipart body carries its own Content-Type (with boundary), set by the
+    // transport when it encodes; only a JSON `body` gets the default json header.
+    const body: RequestBody | undefined =
+      options.multipart !== undefined ? buildMultipart(options.multipart) : options.body;
     if (options.body !== undefined && !('content-type' in headers)) {
       headers['content-type'] = 'application/json';
     }
@@ -109,12 +133,17 @@ export class HttpClient {
         method,
         url: finalUrl,
         headers,
-        ...(options.body !== undefined ? { body: options.body } : {}),
+        ...(body !== undefined ? { body } : {}),
+        ...(options.responseType ? { responseType: options.responseType } : {}),
         signal,
       };
 
       let failure: NormalizedFailure | null = null;
       let retryAfterMs: number | null = null;
+      // The transport's own ActionError, kept so a definitive failure (e.g.
+      // `unsupported_body` — a file on the JSON-only proxy) surfaces with its
+      // real code, not relabelled `transport_unreachable` when we stop retrying.
+      let thrown: ActionError | null = null;
       try {
         // Race the send against the timeout so a transport that ignores the
         // abort signal can never hang the client past `timeoutMs`.
@@ -132,6 +161,7 @@ export class HttpClient {
         retryAfterMs = parseRetryAfter(response.headers['retry-after']);
       } catch (err) {
         // Transport-level throw (unreachable/timeout/aborted) already normalised.
+        if (err instanceof ActionError) thrown = err;
         failure =
           err instanceof ActionError ? err.toFailure() : { status: 0, message: String(err), retryable: true };
       } finally {
@@ -151,6 +181,9 @@ export class HttpClient {
       const canRetry =
         failure.retryable && (idempotent || failure.status === 0) && attempt < this.retry.retries;
       if (!canRetry) {
+        // Preserve the transport's own error (real code + detail) when it threw
+        // one; only synthesise for the HTTP-status path (no original error).
+        if (thrown) throw thrown;
         throw new ActionError({
           code: failure.status === 0 ? 'transport_unreachable' : 'http_error',
           message: failure.message,

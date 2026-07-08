@@ -16,24 +16,71 @@ export type JsonValue = string | number | boolean | null | JsonValue[] | { [key:
 export type QueryValue = string | number | boolean | undefined | null | Array<string | number | boolean>;
 
 /**
+ * Brand that marks a {@link MultipartBody}. A `Symbol` (not a string field) so a
+ * plain JSON object can never masquerade as one — the transport's "encode as
+ * multipart vs. serialise as JSON" decision must be forgery-proof.
+ */
+export const MULTIPART = Symbol('orchestr.http.multipart');
+
+/** One part of a multipart/form-data body: a scalar field or a file. */
+export type MultipartPart =
+  | { readonly type: 'field'; readonly name: string; readonly value: string }
+  | {
+      readonly type: 'file';
+      readonly name: string;
+      readonly filename: string;
+      readonly data: Buffer;
+      readonly contentType?: string;
+    };
+
+/**
+ * A multipart/form-data request body — the file-upload shape. Deliberately
+ * DISTINCT from {@link JsonValue}: a transport branches on it to encode raw bytes
+ * over the wire (direct rail) or reject it loudly (the managed proxy carries JSON
+ * only). Built by the client from the `multipart` request option; action code
+ * never constructs it by hand.
+ */
+export interface MultipartBody {
+  readonly [MULTIPART]: true;
+  readonly parts: readonly MultipartPart[];
+}
+
+/** What an action may send as a request body: JSON (default) or multipart (files). */
+export type RequestBody = JsonValue | MultipartBody;
+
+/** How the caller wants the response body decoded: parsed JSON (default) or raw bytes. */
+export type ResponseType = 'json' | 'binary';
+
+/** Narrow a body to a {@link MultipartBody} — forgery-proof via the symbol brand. */
+export function isMultipartBody(body: RequestBody | undefined): body is MultipartBody {
+  return typeof body === 'object' && body !== null && (body as MultipartBody)[MULTIPART] === true;
+}
+
+/**
  * A normalised outbound request. `url` is absolute; `query` is merged into it by
- * the client before the transport sees it. `body` must be JSON-serialisable —
- * binary/multipart is explicitly out of scope for the managed proxy transport
- * (it decodes bodies to JSON), so keeping the contract JSON-only means an action
- * behaves identically on both transports. Raw non-JSON payloads are rejected
- * loudly rather than silently mangled.
+ * the client before the transport sees it. `body` is JSON by default; a
+ * {@link MultipartBody} carries file uploads and rides ONLY the direct rail (the
+ * managed proxy decodes bodies to JSON and rejects it loudly). `responseType:
+ * 'binary'` tells the transport to return raw bytes (a `Buffer`) instead of
+ * parsing — for downloading attachments.
  */
 export interface NormalizedRequest {
   method: HttpMethod;
   url: string;
   /** Header names are treated case-insensitively by transports. */
   headers: Record<string, string>;
-  body?: JsonValue;
+  body?: RequestBody;
+  /** `'binary'` → the transport returns the raw response bytes as a `Buffer` in `data`. */
+  responseType?: ResponseType;
   /** Abort signal for cancellation/timeouts; transports must honour it. */
   signal?: AbortSignal;
 }
 
-/** A normalised response. `data` is parsed JSON when the body was JSON, else the raw text. */
+/**
+ * A normalised response. `data` is parsed JSON when the body was JSON, the raw
+ * text for other text bodies, or a `Buffer` when the request asked for
+ * `responseType: 'binary'`.
+ */
 export interface NormalizedResponse {
   status: number;
   /** Lower-cased header names. */
@@ -64,7 +111,8 @@ export type FetchLike = (
   init?: {
     method?: string;
     headers?: Record<string, string>;
-    body?: string;
+    /** String for JSON/text; raw bytes for a multipart body. */
+    body?: string | Buffer | Uint8Array;
     signal?: AbortSignal;
   },
 ) => Promise<FetchLikeResponse>;
@@ -73,6 +121,8 @@ export interface FetchLikeResponse {
   status: number;
   headers: { forEach(cb: (value: string, key: string) => void): void };
   text(): Promise<string>;
+  /** Raw response bytes — used when the request asked for `responseType: 'binary'`. */
+  arrayBuffer(): Promise<ArrayBuffer>;
 }
 
 /** Resolve the runtime fetch, or throw a clear error if the host has none. */

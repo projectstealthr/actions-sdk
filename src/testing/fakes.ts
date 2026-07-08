@@ -34,12 +34,13 @@ export function stubAuth(transport: Transport, scheme: AuthHandle['scheme'] = 'n
   return createAuthHandle(scheme, transport);
 }
 
-/** Build a minimal {@link FetchLikeResponse}. */
+/** Build a minimal {@link FetchLikeResponse}. `body` may be text or raw bytes. */
 export function fakeResponse(
   status: number,
-  body: string,
+  body: string | Buffer,
   headers: Record<string, string> = {},
 ): FetchLikeResponse {
+  const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf8');
   return {
     status,
     headers: {
@@ -47,7 +48,9 @@ export function fakeResponse(
         for (const [key, value] of Object.entries(headers)) cb(value, key);
       },
     },
-    text: () => Promise.resolve(body),
+    text: () => Promise.resolve(bytes.toString('utf8')),
+    // Copy into a fresh ArrayBuffer (never a slice of Buffer's shared pool).
+    arrayBuffer: () => Promise.resolve(new Uint8Array(bytes).buffer),
   };
 }
 

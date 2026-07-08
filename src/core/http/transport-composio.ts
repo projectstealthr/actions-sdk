@@ -1,9 +1,11 @@
 import { ActionError } from '../errors';
 import {
   type FetchLike,
+  isMultipartBody,
   type JsonValue,
   type NormalizedRequest,
   type NormalizedResponse,
+  type RequestBody,
   resolveFetch,
   type Transport,
 } from './types';
@@ -90,6 +92,7 @@ export class ComposioProxyTransport implements Transport {
   }
 
   async send(request: NormalizedRequest): Promise<NormalizedResponse> {
+    this.assertNoBinary(request);
     const payload = this.buildPayload(request);
 
     // Compose the caller's abort signal (if any) with our timeout.
@@ -161,6 +164,36 @@ export class ComposioProxyTransport implements Transport {
     };
   }
 
+  /**
+   * The managed proxy carries JSON only: it decodes request bodies to JSON and
+   * cannot return raw bytes. A file upload (multipart) or a binary download is
+   * therefore impossible on this rail — reject it loudly and actionably rather
+   * than silently corrupt the bytes. The managed FILE path is served elsewhere
+   * (the runtime's Composio typed-tool fallback, where Composio moves the file
+   * server-side); an SDK http action must use a direct/BYO connection for files.
+   * See docs/FRAMEWORK-NOTES.md §B.
+   */
+  private assertNoBinary(request: NormalizedRequest): void {
+    if (isMultipartBody(request.body)) {
+      throw new ActionError({
+        code: 'unsupported_body',
+        message:
+          'file uploads need a direct (bring-your-own) connection — the managed proxy carries JSON only',
+        status: 0,
+        retryable: false,
+      });
+    }
+    if (request.responseType === 'binary') {
+      throw new ActionError({
+        code: 'unsupported_body',
+        message:
+          'binary downloads need a direct (bring-your-own) connection — the managed proxy carries JSON only',
+        status: 0,
+        retryable: false,
+      });
+    }
+  }
+
   private buildPayload(request: NormalizedRequest): Record<string, JsonValue> {
     const parameters: Array<{ name: string; value: string; type: 'header' }> = [];
     for (const [name, value] of Object.entries(request.headers)) {
@@ -185,8 +218,10 @@ export class ComposioProxyTransport implements Transport {
    * non-object body is rejected loudly here rather than silently corrupted —
    * the same limitation the platform's managed transport documents.
    */
-  private assertProxyableBody(body: JsonValue): JsonValue {
-    if (typeof body === 'object' && body !== null && !Array.isArray(body)) return body;
+  private assertProxyableBody(body: RequestBody): JsonValue {
+    if (!isMultipartBody(body) && typeof body === 'object' && body !== null && !Array.isArray(body)) {
+      return body;
+    }
     throw new ActionError({
       code: 'unsupported_body',
       message: 'managed connections carry JSON object request bodies only (got a non-object body)',

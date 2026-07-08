@@ -15,14 +15,20 @@ export * as linear from './linear';
 export * as stripe from './stripe';
 
 import { newChannel, newMessage } from './slack';
-import { listChannels, sendChannelMessage } from './slack';
+import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
 import { listIssues, newPush } from './github';
 import { jiraActions } from './jira';
 import { linearActions } from './linear';
 import { stripeActions } from './stripe';
 
 /** Every reference action, for catalog builds and registration. */
-export const referenceActions = [sendChannelMessage, listChannels, listIssues] as const;
+export const referenceActions = [
+  sendChannelMessage,
+  listChannels,
+  listIssues,
+  getFile,
+  uploadFile,
+] as const;
 
 /** Every reference trigger. */
 export const referenceTriggers = [newMessage, newChannel, newPush] as const;
@@ -36,6 +42,8 @@ export const catalogActions = [
   sendChannelMessage,
   listChannels,
   listIssues,
+  getFile,
+  uploadFile,
   ...jiraActions,
   ...linearActions,
   ...stripeActions,

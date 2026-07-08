@@ -156,3 +156,20 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **Connection needed:** Calendly — Composio toolkit `calendly`, managed OAUTH2.
 - **Catalog note:** registered in its own `index.ts` (`calendlyActions`); top-level
   aggregation deferred (shared file held open by a parallel workstream).
+
+### salesforce — PENDING (6 actions)
+
+- **Actions:** `run_query` (SOQL), `search` (SOSL), `create_record`, `get_record`,
+  `update_record`, `delete_record`. REST data API; JSON bodies (writes work);
+  update/delete return 204 → synthesised `{ id, success }`.
+- **Auth:** OAuth2 Bearer. Instance-scoped → `instanceUrl` + `apiVersion` (default
+  v58.0) props on every action. Managed connections carry `instance_url` in
+  account metadata; the BYO/direct rail uses the prop.
+- **Offline:** `src/actions/salesforce/salesforce.spec.ts` (5 golden cases incl.
+  the 204-no-content write handling and SOQL/URL shaping).
+- **Smoke (read, benign):** `run_query` with `SELECT Id FROM Account LIMIT 1`.
+- **Connection needed:** Salesforce — Composio toolkit `salesforce`, managed OAUTH2.
+- **`picker-blocked`:** SObject / field pickers need `instanceUrl` (a prop) →
+  text inputs for now.
+- **Catalog note:** registered in its own `index.ts` (`salesforceActions`);
+  top-level aggregation deferred.
