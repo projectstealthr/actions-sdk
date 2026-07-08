@@ -40,7 +40,10 @@ Four primitives, each doing one job (see `src/`):
 
 - **`defineAction` / `defineTrigger`** — the contract. Triggers support both **polling** (with
   dedup + watermark) and **webhook** (handshake, signature verification, payload → events)
-  strategies.
+  strategies. Webhook triggers can **register per connection**: `onEnable({ webhookUrl, secret })`
+  creates a real provider subscription (a GitHub repo webhook, a Stripe endpoint) pointing at our
+  intake and returns a `WebhookRegistration` handle; `onDisable(handle)` deletes it. App-level
+  webhooks (Slack) omit both. Live-proven end to end by `github.new_push`.
 - **Prop schemas** — `shortText`, `longText`, `number`, `checkbox`, `dropdown` (static **and**
   async `options({ auth, http })` loaders — the config differentiator), `multiSelect`, `json`,
   `file`, `dateTime`. Fully typed: `props` inside `run` is inferred with no `any`. Serialise to

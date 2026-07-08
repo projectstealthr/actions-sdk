@@ -11,7 +11,9 @@ Shapes built (all live- or contract-tested with real data):
 - `slack.send_channel_message` — dynamic dropdown picker, canonical action, managed rail (write).
 - `slack.list_channels` — cursor-in-body pagination, managed rail.
 - `github.list_issues` — Link-header pagination, **direct** rail, **apiKey** scheme (unauth read).
-- `slack.new_message` — webhook trigger (handshake + HMAC + transform + dedup).
+- `slack.new_message` — webhook trigger (app-level: handshake + HMAC + transform + dedup).
+- `github.new_push` — **registered** webhook trigger (`onEnable`/`onDisable` create/delete a real
+  repo webhook + HMAC verify + transform + dedup), live-proven.
 - `slack.new_channel` — polling trigger (dedup + watermark), managed rail.
 
 ---
@@ -98,18 +100,32 @@ lives in *what we add*, which is nothing.
 
 ---
 
-## OPEN / TODO — gaps to close before or during scale-up
+## RESOLVED (later) — registration + the second credential
 
-### A. Webhook `onEnable`/`onDisable` is not yet live-exercised
-Slack's Events API subscription URL is configured at the **app level**, so there is no
-per-connection registration API — `slack.new_message` correctly omits `onEnable`/`onDisable`, and
-its webhook contract (handshake echo, HMAC verify, transform, retry dedup) is proven by **real
-signature vectors and payloads**, not a live inbound call (webhooks are inbound; there's nothing to
-"call out" to for Slack). The SDK contract *does* support registration for providers that need it
-(GitHub repo webhooks, Stripe), but that path has only unit coverage so far. **TODO: build one
-register-per-connection webhook trigger (e.g. `github.new_issue` via repo webhooks) to live-exercise
-`onEnable`/`onDisable` end-to-end** — that's the one part of the trigger contract without a live
-proof.
+### A. Webhook `onEnable`/`onDisable` — now live-proven ✅
+`github.new_push` (a registered repo webhook) closes this. `onEnable` returns a
+**`WebhookRegistration` handle** (`{ subscriptionId }` = the GitHub hook id) the runtime persists;
+`onDisable` takes the handle back and deletes exactly that hook. Live-exercised against a real repo
+(`src/actions/github/new-push.live.spec.ts`, gated behind `ORCHESTR_LIVE` + `GITHUB_LIVE_TOKEN` +
+`GITHUB_TEST_REPO`): create hook → GET confirms it → **`verify()` accepts GitHub's own
+`X-Hub-Signature-256`** over the real `ping` delivery (exact-bytes HMAC, keyed by the secret we
+registered with) → delete hook → GET 404. The one part of the trigger contract that had only unit
+coverage now has an end-to-end live proof.
+
+Contract shape settled by building it: `onEnable(ctx) → WebhookRegistration | void`,
+`onDisable(ctx & { registration })`, with `ctx.webhookUrl` + `ctx.secret` supplied by the runtime.
+App-level webhooks (Slack) simply omit both hooks — `enable`/`disable` are no-ops returning
+`undefined`.
+
+### C. The second credential (signing secret) — now first-class ✅
+Registered webhooks need a signing secret distinct from the connection's OAuth token (Open C). The
+contract now carries it explicitly: the runtime generates one per trigger and passes it as
+`ctx.secret` to `onEnable` (github registers the hook with it) and in the `verify` secrets bag
+(`{ signingSecret }`) on every inbound delivery. One value, generated once, used to both register
+and authenticate — see the runtime wiring in `workflow-service` (`SdkWebhookProvider` +
+`TriggersService`).
+
+## OPEN / TODO — gaps to close before or during scale-up
 
 ### B. The managed (Composio) proxy carries JSON objects only
 The proxy decodes bodies to JSON and mangles anything else, so `ComposioProxyTransport` rejects
@@ -119,11 +135,9 @@ managed rail** — they need the direct rail, or a future multipart-capable mana
 reference action exercises `file` yet. **TODO before shipping any upload/download action:** decide
 the file story (direct-rail-only, or extend the proxy contract) and add a `file` reference.
 
-### C. Webhook triggers have a *second* credential
-A webhook's signing secret (Slack signing secret) is **app-level config, distinct from the
-connection's OAuth token**. The contract models this with a `secrets` bag passed to `verify(req,
-secrets)` — but it means the runtime must plumb a second credential to webhook triggers, separate
-from the auth handle. Worth confirming the platform's webhook config surface can carry it.
+### C. Webhook triggers have a *second* credential — RESOLVED
+See "The second credential (signing secret) — now first-class" above: `ctx.secret` +
+the `verify` secrets bag carry it, generated once per trigger by the runtime.
 
 ### D. `HttpResponse<T>` is a caller-asserted boundary cast
 `http.get<SlackListResponse>()` casts `unknown → T` once; the action is then responsible for the
@@ -152,8 +166,10 @@ Two things to settle **before** scaling into the relevant app classes (not block
 REST-CRUD-shaped apps, which are the bulk):
 
 1. **File/binary story (Open B)** — needed before any upload/download action; pick the rail.
-2. **Register-per-connection webhook path (Open A)** — live-exercise `onEnable`/`onDisable` on one
-   real provider before authoring a batch of webhook triggers.
+2. ~~Register-per-connection webhook path (Open A)~~ — **DONE**: `github.new_push` live-proves
+   `onEnable`/`onDisable` (create/delete a real repo webhook) + the `WebhookRegistration` handle +
+   HMAC verify against GitHub's own signature. Registered webhook triggers can now be authored in
+   batch on a proven contract.
 
 Everything else on the open list is tuning/hardening that rides on top of a sound contract, not a
 change to it. Recommendation: proceed to the design's sequencing (transport-gap apps first), and

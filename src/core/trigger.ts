@@ -94,6 +94,19 @@ export interface HandshakeResponse {
   body?: JsonValue;
 }
 
+/**
+ * The durable handle {@link WebhookTriggerDefinition.onEnable} returns after
+ * registering a subscription with the provider. `subscriptionId` is the
+ * provider's id for the thing to delete on disable (a GitHub hook id, a Stripe
+ * webhook-endpoint id, …). It must be JSON-serialisable end-to-end: the runtime
+ * persists it verbatim and hands it back to {@link WebhookTriggerDefinition.onDisable}.
+ * Extra provider-specific fields are allowed (they ride along in the handle).
+ */
+export interface WebhookRegistration {
+  subscriptionId: string;
+  [key: string]: JsonValue;
+}
+
 export interface WebhookContext<TProps extends PropsSchema> {
   auth: AuthHandle;
   props: PropsValue<TProps>;
@@ -101,14 +114,31 @@ export interface WebhookContext<TProps extends PropsSchema> {
   store: TriggerStore;
   /** The public URL the provider should call — passed to registration. */
   webhookUrl: string;
+  /**
+   * The per-trigger signing secret the runtime generated. `onEnable` registers
+   * the subscription with it so the provider signs deliveries; `verify` checks
+   * inbound signatures against the same value (passed in the `verify` secrets
+   * bag). Empty string for app-level webhooks that carry no per-trigger secret.
+   */
+  secret: string;
 }
 
 export interface WebhookTriggerDefinition<TProps extends PropsSchema, TItem> extends TriggerBase<TProps> {
   strategy: 'webhook';
-  /** Register a subscription pointing at `webhookUrl`. Omit for app-level webhooks (e.g. Slack Events). */
-  onEnable?(ctx: WebhookContext<TProps>): Promise<void>;
-  /** Remove the subscription created by {@link onEnable}. */
-  onDisable?(ctx: WebhookContext<TProps>): Promise<void>;
+  /**
+   * Register a subscription with the provider pointing at `ctx.webhookUrl`,
+   * signed with `ctx.secret`, and return a {@link WebhookRegistration} the
+   * runtime persists. Omit for app-level webhooks whose subscription URL is
+   * configured out of band (e.g. Slack Events) — nothing to register per
+   * connection, nothing to hand back on disable.
+   */
+  onEnable?(ctx: WebhookContext<TProps>): Promise<WebhookRegistration | void>;
+  /**
+   * Remove the subscription {@link onEnable} created. `registration` is the
+   * exact handle `onEnable` returned (undefined only if enable never produced
+   * one, or the runtime lost it) — delete by `subscriptionId`.
+   */
+  onDisable?(ctx: WebhookContext<TProps> & { registration?: WebhookRegistration }): Promise<void>;
   /** Echo a provider verification challenge (Slack `url_verification`). Return null to ignore. */
   handshake?(request: WebhookRequest): HandshakeResponse | null;
   /** Authenticate the request (HMAC signature). Return false to reject. */
@@ -126,6 +156,8 @@ export interface HandleWebhookInput {
   request: WebhookRequest;
   http?: HttpClient;
   webhookUrl?: string;
+  /** The per-trigger signing secret — surfaced to `onRequest` via `ctx.secret`. */
+  secret?: string;
   /** Verification secrets (e.g. `{ signingSecret }`); passed to `verify`. */
   secrets?: Record<string, string>;
 }
@@ -135,15 +167,24 @@ export interface EnableInput {
   props: Record<string, unknown>;
   store: TriggerStore;
   webhookUrl: string;
+  /** The per-trigger signing secret to register the subscription with. */
+  secret: string;
   http?: HttpClient;
+}
+
+export interface DisableInput extends EnableInput {
+  /** The handle `enable` returned; hands `onDisable` the subscription to delete. */
+  registration?: WebhookRegistration;
 }
 
 export interface WebhookTrigger<TProps extends PropsSchema, TItem> extends WebhookTriggerDefinition<
   TProps,
   TItem
 > {
-  enable(input: EnableInput): Promise<void>;
-  disable(input: EnableInput): Promise<void>;
+  /** Register the subscription and return the handle to persist (or undefined for app-level webhooks). */
+  enable(input: EnableInput): Promise<WebhookRegistration | undefined>;
+  /** Deregister the subscription named by `input.registration`. */
+  disable(input: DisableInput): Promise<void>;
   /** Answer a verification handshake, or null if this request isn't one. */
   handleHandshake(request: WebhookRequest): HandshakeResponse | null;
   /** Verify (if configured), transform, and dedupe an inbound request into events. */
@@ -227,13 +268,21 @@ function buildWebhookTrigger<TProps extends PropsSchema, TItem>(
 ): WebhookTrigger<TProps, TItem> {
   return {
     ...def,
-    async enable(input: EnableInput): Promise<void> {
-      if (!def.onEnable) return;
+    async enable(input: EnableInput): Promise<WebhookRegistration | undefined> {
+      if (!def.onEnable) return undefined;
       const props = parseProps(def.props, input.props);
       const http = input.http ?? new HttpClient();
-      await def.onEnable({ auth: input.auth, props, http, store: input.store, webhookUrl: input.webhookUrl });
+      const registration = await def.onEnable({
+        auth: input.auth,
+        props,
+        http,
+        store: input.store,
+        webhookUrl: input.webhookUrl,
+        secret: input.secret,
+      });
+      return registration ?? undefined;
     },
-    async disable(input: EnableInput): Promise<void> {
+    async disable(input: DisableInput): Promise<void> {
       if (!def.onDisable) return;
       const props = parseProps(def.props, input.props);
       const http = input.http ?? new HttpClient();
@@ -243,6 +292,8 @@ function buildWebhookTrigger<TProps extends PropsSchema, TItem>(
         http,
         store: input.store,
         webhookUrl: input.webhookUrl,
+        secret: input.secret,
+        ...(input.registration ? { registration: input.registration } : {}),
       });
     },
     handleHandshake(request: WebhookRequest): HandshakeResponse | null {
@@ -268,6 +319,7 @@ function buildWebhookTrigger<TProps extends PropsSchema, TItem>(
         http,
         store: input.store,
         webhookUrl: input.webhookUrl ?? '',
+        secret: input.secret ?? '',
         request: input.request,
       });
 

@@ -109,6 +109,8 @@ export {
 } from './core/action';
 export {
   defineTrigger,
+  type DisableInput,
+  type EnableInput,
   type HandleWebhookInput,
   type HandshakeResponse,
   type PollingContext,
@@ -118,6 +120,7 @@ export {
   type PollResult,
   type TriggerStore,
   type WebhookContext,
+  type WebhookRegistration,
   type WebhookRequest,
   type WebhookTrigger,
   type WebhookTriggerDefinition,
