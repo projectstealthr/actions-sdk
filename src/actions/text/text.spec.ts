@@ -20,15 +20,15 @@ const noAuth = stubAuth(new FakeTransport(() => ({ status: 200, headers: {}, dat
 describe('text actions', () => {
   it('concatenates values with a separator', async () => {
     expect(
-      await concat.execute({ auth: noAuth, props: { values: ['a', 'b', 'c'], separator: '-' } }),
+      await concat.execute({ auth: noAuth, props: { texts: ['a', 'b', 'c'], separator: '-' } }),
     ).toEqual({
       result: 'a-b-c',
     });
-    expect(await concat.execute({ auth: noAuth, props: { values: [1, 2, 3] } })).toEqual({ result: '123' });
+    expect(await concat.execute({ auth: noAuth, props: { texts: [1, 2, 3] } })).toEqual({ result: '123' });
   });
 
   it('rejects a non-array concat input', async () => {
-    await expect(concat.execute({ auth: noAuth, props: { values: 'not-an-array' } })).rejects.toMatchObject({
+    await expect(concat.execute({ auth: noAuth, props: { texts: 'not-an-array' } })).rejects.toMatchObject({
       code: 'invalid_input',
     });
   });

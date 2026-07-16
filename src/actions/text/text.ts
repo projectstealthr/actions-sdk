@@ -47,18 +47,18 @@ export const concat = defineAction({
   description: 'Join a list of values into a single string with an optional separator.',
   auth: { type: 'none' },
   props: {
-    values: json({ label: 'Values', description: 'A JSON array of values to join.', required: true }),
+    texts: json({ label: 'Texts', description: 'A JSON array of values to join.', required: true }),
     separator: shortText({ label: 'Separator', required: false, defaultValue: '' }),
   },
   run: ({ props }): Promise<ConcatResult> => {
-    if (!Array.isArray(props.values)) {
+    if (!Array.isArray(props.texts)) {
       throw new ActionError({
         code: 'invalid_input',
-        message: '"values" must be a JSON array',
+        message: '"texts" must be a JSON array',
         retryable: false,
       });
     }
-    const parts = props.values.map((v) =>
+    const parts = props.texts.map((v) =>
       v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v),
     );
     return Promise.resolve({ result: parts.join(props.separator ?? '') });
