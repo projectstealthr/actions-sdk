@@ -1,14 +1,15 @@
+import jsonata from 'jsonata';
+
 import { defineAction } from '../../core/action';
 import { ActionError } from '../../core/errors';
 import type { JsonValue } from '../../core/http/types';
-import { checkbox, json, longText, number } from '../../core/props';
+import { checkbox, json, longText, number, shortText } from '../../core/props';
 
 /**
  * JSON utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `json` piece. Pure, dependency-free transforms over JSON values.
- *
- * Deferred to a later phase (needs the `jsonata` dependency, out of scope for the
- * dependency-free phase-1): `run_jsonata_query`.
+ * `json` piece. The core transforms are dependency-free; `run_jsonata_query`
+ * uses `jsonata` (MIT). The `run_jsonata_query` type string is kept
+ * byte-identical to AP's so an AP-authored node silently upgrades to ours.
  */
 
 function isPlainObject(value: JsonValue): value is { [k: string]: JsonValue } {
@@ -98,5 +99,39 @@ export const mergeJson = defineAction({
     }
     const result = props.deep ? deepMerge(props.json1, props.json2) : { ...props.json1, ...props.json2 };
     return Promise.resolve({ result });
+  },
+});
+
+export const RUN_JSONATA_TYPE = 'json.run_jsonata_query';
+export interface RunJsonataResult {
+  result: JsonValue;
+}
+export const runJsonataQuery = defineAction({
+  type: RUN_JSONATA_TYPE,
+  name: 'Run JSONata Query',
+  description: 'Filter, map, and transform a JSON payload with a JSONata expression.',
+  auth: { type: 'none' },
+  props: {
+    data: json({ label: 'JSON Data', description: 'The array or object to manipulate.', required: true }),
+    query: shortText({
+      label: 'JSONata Query',
+      description: 'A JSONata expression (e.g. $[status="active"]).',
+      required: true,
+    }),
+  },
+  run: async ({ props }): Promise<RunJsonataResult> => {
+    try {
+      const evaluated: unknown = await jsonata(props.query).evaluate(props.data);
+      if (evaluated === undefined) return { result: null };
+      // JSONata returns boxed "sequence" arrays; round-trip through JSON to a plain value.
+      const serialised = JSON.stringify(evaluated);
+      return { result: serialised === undefined ? null : (JSON.parse(serialised) as JsonValue) };
+    } catch (err) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: `JSONata query failed: ${err instanceof Error ? err.message : String(err)}`,
+        retryable: false,
+      });
+    }
   },
 });

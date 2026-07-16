@@ -38,27 +38,36 @@ describe('SDK action catalog projection', () => {
     }
   });
 
-  it('registers the ported no-auth utility apps (phase-1 set)', () => {
+  it('registers the ported no-auth utility apps (phase-1 + heavy-lib phase-2)', () => {
     const utilityTypes = new Set(utilityActions.map((a) => a.type));
     const expected = [
       'http.send_request',
       'http.parse_url',
       'text.concat',
+      'text.markdown_to_html',
+      'text.html_to_markdown',
+      'text.extract_from_html',
       'date.format_date',
       'math.addition_math',
       'json.merge_json',
+      'json.run_jsonata_query',
       'xml.convert_json_to_xml',
+      'xml.convert_xml_to_json',
       'csv.convert_csv_to_json',
+      'csv.convert_excel_to_csv',
       'crypto.hash_text',
       'data_mapper.advanced_mapping',
       'graphql.send_request',
       'hackernews.fetch_top_stories',
       'binance.fetch_crypto_pair_price',
+      'pdf.extract_text',
+      'pdf.merge_pdfs',
+      'qrcode.text_to_qrcode',
     ];
     for (const type of expected) expect(utilityTypes.has(type)).toBe(true);
     // Utility apps carry no credential — every one must project as `none` auth.
     for (const action of utilityActions) expect(action.auth.type).toBe('none');
-    // 12 utility apps across the ported set.
+    // 14 utility apps across the ported set.
     const apps = new Set([...utilityTypes].map((t) => t.slice(0, t.indexOf('.'))));
     expect(apps).toEqual(
       new Set([
@@ -74,6 +83,8 @@ describe('SDK action catalog projection', () => {
         'graphql',
         'hackernews',
         'binance',
+        'pdf',
+        'qrcode',
       ]),
     );
   });

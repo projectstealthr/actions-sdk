@@ -1,14 +1,18 @@
+import { Workbook } from 'exceljs';
+
 import { defineAction } from '../../core/action';
 import { ActionError } from '../../core/errors';
 import type { JsonValue } from '../../core/http/types';
-import { checkbox, json, longText, shortText } from '../../core/props';
+import { checkbox, dropdown, file, json, longText, shortText } from '../../core/props';
 
 /**
  * CSV utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `csv` piece. A dependency-free RFC-4180 parser/serialiser (quoted fields,
- * embedded delimiters/newlines, doubled-quote escaping).
- *
- * Deferred to a later phase (needs an XLSX dependency): `convert_excel_to_csv`.
+ * `csv` piece. The CSV↔JSON transforms are a dependency-free RFC-4180
+ * parser/serialiser; `convert_excel_to_csv` reads a workbook with `exceljs`
+ * (MIT). AP's action used the frozen `xlsx@0.18.5` (Apache-2.0 but shipped with
+ * unpatched CVEs); we use the maintained MIT `exceljs` instead — it reads modern
+ * `.xlsx`/`.xlsm`, so legacy binary `.xls` (OLE2) is rejected with a clear
+ * message rather than mis-parsed.
  */
 
 /** Parse CSV text into a matrix of string cells (RFC-4180 quoting rules). */
@@ -147,5 +151,83 @@ export const convertJsonToCsv = defineAction({
       lines.push(columns.map((col) => encodeCell(stringifyCell(row[col]), d)).join(d));
     }
     return Promise.resolve({ result: lines.join('\n') });
+  },
+});
+
+export const EXCEL_TO_CSV_TYPE = 'csv.convert_excel_to_csv';
+export interface ExcelToCsvResult {
+  csv: string;
+  sheet_name: string;
+  available_sheets: string[];
+}
+export const convertExcelToCsv = defineAction({
+  type: EXCEL_TO_CSV_TYPE,
+  name: 'Convert Excel to CSV',
+  description: 'Convert a sheet of an Excel (.xlsx/.xlsm) file into CSV text.',
+  auth: { type: 'none' },
+  props: {
+    file: file({ label: 'Excel File', description: 'An .xlsx or .xlsm workbook.', required: true }),
+    sheetName: shortText({
+      label: 'Sheet Name',
+      description: 'Name of the sheet to convert. Leave blank to use the first sheet.',
+      required: false,
+    }),
+    delimiter: dropdown<string, false>({
+      label: 'Delimiter',
+      required: false,
+      defaultValue: ',',
+      options: [
+        { label: 'Comma (,)', value: ',' },
+        { label: 'Tab', value: '\t' },
+        { label: 'Semicolon (;)', value: ';' },
+      ],
+    }),
+  },
+  run: async ({ props }): Promise<ExcelToCsvResult> => {
+    const bytes = props.file.data;
+    // XLSX/XLSM (ZIP) begins with "PK"; legacy XLS (OLE2) begins with 0xD0 0xCF.
+    if (bytes.length < 2 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+      const legacy = bytes[0] === 0xd0 && bytes[1] === 0xcf;
+      throw new ActionError({
+        code: 'invalid_input',
+        message: legacy
+          ? 'Legacy binary .xls files are not supported — please re-save as .xlsx.'
+          : 'The file does not appear to be a valid .xlsx/.xlsm workbook.',
+        retryable: false,
+      });
+    }
+    const workbook = new Workbook();
+    try {
+      // exceljs augments the global Buffer type; cast to its exact param type to bridge it.
+      await workbook.xlsx.load(bytes as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+    } catch (err) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: `Failed to read the workbook: ${err instanceof Error ? err.message : String(err)}`,
+        retryable: false,
+      });
+    }
+    const availableSheets = workbook.worksheets.map((ws) => ws.name);
+    const wanted = props.sheetName?.trim();
+    const worksheet = wanted && wanted.length > 0 ? workbook.getWorksheet(wanted) : workbook.worksheets[0];
+    if (!worksheet) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message:
+          wanted && wanted.length > 0
+            ? `Sheet "${wanted}" not found. Available sheets: ${availableSheets.join(', ')}`
+            : 'The workbook contains no sheets.',
+        retryable: false,
+      });
+    }
+    const d = props.delimiter && props.delimiter.length > 0 ? props.delimiter : ',';
+    const columnCount = worksheet.columnCount;
+    const lines: string[] = [];
+    worksheet.eachRow({ includeEmpty: true }, (row) => {
+      const cells: string[] = [];
+      for (let c = 1; c <= columnCount; c++) cells.push(encodeCell(row.getCell(c).text ?? '', d));
+      lines.push(cells.join(d));
+    });
+    return { csv: lines.join('\n'), sheet_name: worksheet.name, available_sheets: availableSheets };
   },
 });

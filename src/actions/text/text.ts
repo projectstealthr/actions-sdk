@@ -1,20 +1,26 @@
+import { parse as parseHtml } from 'node-html-parser';
+import { Converter } from 'showdown';
+import TurndownService from 'turndown';
+
 import { defineAction } from '../../core/action';
 import { ActionError } from '../../core/errors';
 import type { JsonValue } from '../../core/http/types';
-import { checkbox, json, longText, shortText } from '../../core/props';
+import { checkbox, dropdown, json, longText, number, shortText } from '../../core/props';
 
 /**
  * Text utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `text-helper` piece. Pure string functions with zero external dependencies, so
- * they run offline at zero marginal cost. `text.concat` is load-bearing: the IR
+ * `text-helper` piece. The core string transforms are dependency-free; the
+ * HTML/Markdown trio added here uses small permissive libraries (`showdown` MIT,
+ * `turndown` MIT, `node-html-parser` MIT). `text.concat` is load-bearing: the IR
  * generator emits it, so its public type is kept byte-identical to AP's for the
  * silent upgrade. AP types that the SDK namespace forbids (`stripHtml`,
- * `defaultValue`) are re-spelled snake_case.
- *
- * Deferred to a later phase (need a real HTML/Markdown parser, out of scope for
- * the dependency-free phase-1): `markdown_to_html`, `html_to_markdown`,
- * `extract_from_html`.
+ * `defaultValue`) are re-spelled snake_case; `markdown_to_html`,
+ * `html_to_markdown` and `extract_from_html` already match snake_case.
  */
+
+type MarkdownFlavor = 'github' | 'original' | 'vanilla';
+type ExtractTarget = 'title' | 'links' | 'images' | 'headings' | 'paragraphs' | 'custom';
+type ExtractionType = 'textContent' | 'innerHtml' | 'outerHtml' | 'attribute';
 
 function build(pattern: string, useRegex: boolean, caseInsensitive: boolean, global: boolean): RegExp {
   const flags = `${global ? 'g' : ''}${caseInsensitive ? 'i' : ''}`;
@@ -255,5 +261,171 @@ export const jsonToAsciiTable = defineAction({
     const divider = `+${widths.map((w) => '-'.repeat(w + 2)).join('+')}+`;
     const body = rows.map((row) => line(columns.map((col) => cell(row[col]))));
     return Promise.resolve({ table: [divider, line(columns), divider, ...body, divider].join('\n') });
+  },
+});
+
+export const MARKDOWN_TO_HTML_TYPE = 'text.markdown_to_html';
+export interface MarkdownToHtmlResult {
+  html: string;
+}
+export const markdownToHtml = defineAction({
+  type: MARKDOWN_TO_HTML_TYPE,
+  name: 'Markdown to HTML',
+  description: 'Convert Markdown to HTML.',
+  auth: { type: 'none' },
+  props: {
+    markdown: longText({ label: 'Markdown Content', required: true }),
+    flavor: dropdown<MarkdownFlavor, false>({
+      label: 'Flavor of Markdown',
+      required: false,
+      defaultValue: 'github',
+      options: [
+        { label: 'Default', value: 'vanilla' },
+        { label: 'Original', value: 'original' },
+        { label: 'GitHub', value: 'github' },
+      ],
+    }),
+    headerLevelStart: number({ label: 'Minimum Header Level', required: false, defaultValue: 1 }),
+    tables: checkbox({ label: 'Support Tables', required: false, defaultValue: true }),
+    noHeaderId: checkbox({ label: 'No Header ID', required: false, defaultValue: false }),
+    simpleLineBreaks: checkbox({ label: 'Simple Line Breaks', required: false, defaultValue: false }),
+    openLinksInNewWindow: checkbox({
+      label: 'Open Links in New Window',
+      required: false,
+      defaultValue: false,
+    }),
+  },
+  run: ({ props }): Promise<MarkdownToHtmlResult> => {
+    const headerLevelStart = props.headerLevelStart ?? 1;
+    if (headerLevelStart < 1 || headerLevelStart > 6) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: 'Minimum Header Level must be between 1 and 6.',
+        retryable: false,
+      });
+    }
+    const converter = new Converter({
+      headerLevelStart,
+      omitExtraWLInCodeBlocks: true,
+      noHeaderId: props.noHeaderId ?? false,
+      tables: props.tables ?? true,
+      simpleLineBreaks: props.simpleLineBreaks ?? false,
+      openLinksInNewWindow: props.openLinksInNewWindow ?? false,
+    });
+    converter.setFlavor(props.flavor ?? 'github');
+    return Promise.resolve({ html: converter.makeHtml(props.markdown) });
+  },
+});
+
+export const HTML_TO_MARKDOWN_TYPE = 'text.html_to_markdown';
+export interface HtmlToMarkdownResult {
+  markdown: string;
+}
+export const htmlToMarkdown = defineAction({
+  type: HTML_TO_MARKDOWN_TYPE,
+  name: 'HTML to Markdown',
+  description: 'Convert HTML to Markdown.',
+  auth: { type: 'none' },
+  props: { html: longText({ label: 'HTML Content', required: true }) },
+  run: ({ props }): Promise<HtmlToMarkdownResult> => {
+    const service = new TurndownService();
+    service.remove('script');
+    return Promise.resolve({ markdown: service.turndown(props.html) });
+  },
+});
+
+const PREDEFINED_SELECTORS: Record<Exclude<ExtractTarget, 'custom'>, string> = {
+  title: 'title',
+  links: 'a[href]',
+  images: 'img[src]',
+  headings: 'h1, h2, h3',
+  paragraphs: 'p',
+};
+
+export const EXTRACT_FROM_HTML_TYPE = 'text.extract_from_html';
+export interface ExtractFromHtmlResult {
+  result: string | string[] | null;
+}
+export const extractFromHtml = defineAction({
+  type: EXTRACT_FROM_HTML_TYPE,
+  name: 'Extract from HTML',
+  description: 'Extract elements or data from an HTML document with a CSS selector.',
+  auth: { type: 'none' },
+  props: {
+    html: longText({ label: 'HTML Content', required: true }),
+    target: dropdown<ExtractTarget, false>({
+      label: 'Extraction Target',
+      required: false,
+      defaultValue: 'title',
+      options: [
+        { label: 'Page Title', value: 'title' },
+        { label: 'All Links (<a> elements)', value: 'links' },
+        { label: 'All Images', value: 'images' },
+        { label: 'Main Headings (H1, H2, H3)', value: 'headings' },
+        { label: 'Paragraphs / Text Blocks', value: 'paragraphs' },
+        { label: 'Custom CSS Selector (Advanced)', value: 'custom' },
+      ],
+    }),
+    selector: shortText({ label: 'Custom CSS Selector', required: false }),
+    extractionType: dropdown<ExtractionType, false>({
+      label: 'Extraction Type',
+      required: false,
+      defaultValue: 'textContent',
+      options: [
+        { label: 'Text Content (Clean Text)', value: 'textContent' },
+        { label: 'Inner HTML', value: 'innerHtml' },
+        { label: 'Outer HTML', value: 'outerHtml' },
+        { label: 'Attribute (e.g., href, src)', value: 'attribute' },
+      ],
+    }),
+    attributeName: shortText({ label: 'Attribute Name', required: false }),
+    returnMultiple: checkbox({ label: 'Return Multiple Elements', required: false, defaultValue: false }),
+  },
+  run: ({ props }): Promise<ExtractFromHtmlResult> => {
+    const target = props.target ?? 'title';
+    const extractionType = props.extractionType ?? 'textContent';
+    const finalSelector = target === 'custom' ? props.selector : PREDEFINED_SELECTORS[target];
+    if (target === 'custom' && (!finalSelector || finalSelector.length === 0)) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: 'A Custom CSS Selector is required when the target is "Custom".',
+        retryable: false,
+      });
+    }
+    if (extractionType === 'attribute' && (!props.attributeName || props.attributeName.length === 0)) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: 'An Attribute Name is required when the extraction type is "Attribute".',
+        retryable: false,
+      });
+    }
+    let elements;
+    try {
+      elements = parseHtml(props.html).querySelectorAll(finalSelector ?? '');
+    } catch (err) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: `Invalid CSS selector "${finalSelector}": ${err instanceof Error ? err.message : String(err)}`,
+        retryable: false,
+      });
+    }
+    const returnMultiple = props.returnMultiple ?? false;
+    if (elements.length === 0) return Promise.resolve({ result: returnMultiple ? [] : null });
+    const extract = (el: (typeof elements)[number]): string => {
+      switch (extractionType) {
+        case 'innerHtml':
+          return el.innerHTML;
+        case 'outerHtml':
+          return el.outerHTML;
+        case 'attribute':
+          return el.getAttribute(props.attributeName ?? '') ?? '';
+        case 'textContent':
+        default:
+          return (el.textContent ?? '').trim();
+      }
+    };
+    if (returnMultiple) return Promise.resolve({ result: elements.map(extract) });
+    const first = elements[0];
+    return Promise.resolve({ result: first ? extract(first) : null });
   },
 });

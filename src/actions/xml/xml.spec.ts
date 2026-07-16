@@ -1,5 +1,5 @@
 import { FakeTransport, stubAuth } from '../../testing/fakes';
-import { convertJsonToXml, xmlActions } from './index';
+import { convertJsonToXml, convertXmlToJson, xmlActions } from './index';
 
 const noAuth = stubAuth(new FakeTransport(() => ({ status: 200, headers: {}, data: {} })));
 
@@ -40,8 +40,30 @@ describe('xml actions', () => {
     expect(out.result).toContain('<_1bad_key>x</_1bad_key>');
   });
 
-  it('exposes one action, xml.* typed', () => {
-    expect(xmlActions).toHaveLength(1);
+  it('parses XML into JSON, including attributes', async () => {
+    const out = await convertXmlToJson.execute({
+      auth: noAuth,
+      props: { xml: '<root><a id="1">x</a><b>y</b></root>' },
+    });
+    expect(out.result).toEqual({ root: { a: { '#text': 'x', '@_id': '1' }, b: 'y' } });
+  });
+
+  it('drops attributes when ignoreAttributes is on', async () => {
+    const out = await convertXmlToJson.execute({
+      auth: noAuth,
+      props: { xml: '<root><a id="1">x</a></root>', ignoreAttributes: true },
+    });
+    expect(out.result).toEqual({ root: { a: 'x' } });
+  });
+
+  it('rejects malformed XML', async () => {
+    await expect(
+      convertXmlToJson.execute({ auth: noAuth, props: { xml: '<root><unclosed></root>' } }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+
+  it('exposes two actions, xml.* typed', () => {
+    expect(xmlActions).toHaveLength(2);
     for (const action of xmlActions) expect(action.type.startsWith('xml.')).toBe(true);
   });
 });

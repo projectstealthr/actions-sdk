@@ -127,10 +127,30 @@ framework returns only events unseen since the stored cursor (a `lastPolledAt` w
 `pollViaComposio` reroute). Reference polling triggers: `http.new_item`, `hackernews.new_story`,
 `rss.new_item` (plus the pre-existing `slack.new_channel`).
 
-Deferred to a later phase (need a heavy third-party lib, which the dependency-free phase-1 avoids):
-the `pdf` app + `qrcode`, plus `text.markdown_to_html`/`html_to_markdown`/`extract_from_html`,
-`json.run_jsonata_query`, `csv.convert_excel_to_csv`, `xml.convert_xml_to_json`,
-`crypto.openpgp_encrypt`.
+## Heavy-lib utility apps (AP-retirement phase 2)
+
+The second wave ports the utilities that phase-1 deferred because they need a third-party library.
+Each dependency was vetted **permissive-only** (MIT / Apache-2.0 / BSD / ISC); nothing copyleft
+ships. Same clean-room posture, same `none`-scheme / offline / zero-marginal-cost profile.
+
+| App / action(s) | Library (license) |
+|---|---|
+| `pdf` — extract_text, pdf_page_count, text_to_pdf, image_to_pdf, merge_pdfs, extract_pdf_pages, add_text_to_pdf, add_image_to_pdf (8) | `pdf-lib` (MIT) + `unpdf` (MIT) for text extraction |
+| `qrcode` — text_to_qrcode (1) | `qrcode` (MIT) |
+| `text` — markdown_to_html, html_to_markdown, extract_from_html (3) | `showdown` (MIT), `turndown` (MIT), `node-html-parser` (MIT) |
+| `json` — run_jsonata_query (1) | `jsonata` (MIT) |
+| `csv` — convert_excel_to_csv (1) | `exceljs` (MIT) |
+| `xml` — convert_xml_to_json (1) | `fast-xml-parser` (MIT) |
+
+Extraction of PDF text needs the ESM-only `unpdf`; the CommonJS build loads it through a runtime
+dynamic `import()`, and the Jest suite runs under `--experimental-vm-modules` to match.
+
+**Deferred on licensing / portability grounds** (recorded rather than shipped on a copyleft dep):
+- `crypto.openpgp_encrypt` — the canonical `openpgp.js` (all versions) is **LGPL-3.0**, outside the
+  permissive allowlist; the only permissive pure-JS OpenPGP lib (kbpgp, BSD-3-Clause) is
+  unmaintained. Revisit if the owner accepts LGPL for this leaf dep.
+- `pdf.convert_to_image` (PDF → raster) — the AP action shells out to the poppler `pdftoppm`
+  system binary (**GPL-2.0**), and there is no lightweight permissive pure-JS PDF rasteriser.
 
 ## Testing
 

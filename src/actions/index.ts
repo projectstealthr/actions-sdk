@@ -9,11 +9,14 @@
  *  - github.new_push            — registered webhook trigger (onEnable/onDisable + signature)
  *  - slack.new_channel          — polling trigger (dedup)
  *
- * Ported no-auth utility apps (AP-retirement phase 1) — pure, dependency-free,
- * offline, zero-marginal-cost: `http, text, date, math, json, xml, csv, crypto,
- * data_mapper, graphql, hackernews, binance`. These are the self-host core
- * Composio cannot serve. Polling triggers (`http.new_item`, `hackernews.new_story`,
- * `rss.new_item`) exercise the SDK polling framework end to end.
+ * Ported no-auth utility apps — the self-host core Composio cannot serve, run
+ * in-process offline at zero marginal cost. Phase 1 was pure/dependency-free
+ * (`http, text, date, math, json, xml, csv, crypto, data_mapper, graphql,
+ * hackernews, binance`); phase 2 adds the heavy-lib utilities on vetted
+ * permissive dependencies (`pdf`, `qrcode`, plus the markdown/HTML, JSONata,
+ * XLSX and XML-parse actions folded into the existing apps). Polling triggers
+ * (`http.new_item`, `hackernews.new_story`, `rss.new_item`) exercise the SDK
+ * polling framework end to end.
  */
 export * as slack from './slack';
 export * as github from './github';
@@ -54,6 +57,8 @@ export * as data_mapper from './data-mapper';
 export * as graphql from './graphql';
 export * as hackernews from './hackernews';
 export * as binance from './binance';
+export * as pdf from './pdf';
+export * as qrcode from './qrcode';
 export * as rss from './rss';
 
 import { newChannel, newMessage } from './slack';
@@ -96,6 +101,8 @@ import { dataMapperActions } from './data-mapper';
 import { graphqlActions } from './graphql';
 import { hackernewsActions, newStory as hackernewsNewStory } from './hackernews';
 import { binanceActions } from './binance';
+import { pdfActions } from './pdf';
+import { qrcodeActions } from './qrcode';
 import { newItem as rssNewItem } from './rss';
 
 /** Every reference action, for catalog builds and registration. */
@@ -122,6 +129,8 @@ export const utilityActions = [
   ...graphqlActions,
   ...hackernewsActions,
   ...binanceActions,
+  ...pdfActions,
+  ...qrcodeActions,
 ];
 
 /**
