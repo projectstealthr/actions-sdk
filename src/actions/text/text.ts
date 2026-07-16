@@ -38,30 +38,30 @@ function build(pattern: string, useRegex: boolean, caseInsensitive: boolean, glo
 }
 
 export const CONCAT_TYPE = 'text.concat';
-export interface ConcatResult {
-  result: string;
-}
 export const concat = defineAction({
   type: CONCAT_TYPE,
   name: 'Concatenate',
   description: 'Join a list of values into a single string with an optional separator.',
   auth: { type: 'none' },
   props: {
-    values: json({ label: 'Values', description: 'A JSON array of values to join.', required: true }),
+    texts: json({ label: 'Texts', description: 'A JSON array of values to join.', required: true }),
     separator: shortText({ label: 'Separator', required: false, defaultValue: '' }),
   },
-  run: ({ props }): Promise<ConcatResult> => {
-    if (!Array.isArray(props.values)) {
+  // Returns the joined string DIRECTLY (not `{ result }`) — AP's `text-helper`
+  // concat returns a bare string, and the IR generator + existing workflows
+  // consume that shape. Wrapping it would silently break the upgrade.
+  run: ({ props }): Promise<string> => {
+    if (!Array.isArray(props.texts)) {
       throw new ActionError({
         code: 'invalid_input',
-        message: '"values" must be a JSON array',
+        message: '"texts" must be a JSON array',
         retryable: false,
       });
     }
-    const parts = props.values.map((v) =>
+    const parts = props.texts.map((v) =>
       v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v),
     );
-    return Promise.resolve({ result: parts.join(props.separator ?? '') });
+    return Promise.resolve(parts.join(props.separator ?? ''));
   },
 });
 

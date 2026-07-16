@@ -1,7 +1,6 @@
 export {
   CONCAT_TYPE,
   concat,
-  type ConcatResult,
   DEFAULT_VALUE_TYPE,
   defaultValue,
   type DefaultValueResult,
