@@ -19,12 +19,11 @@ const noAuth = stubAuth(new FakeTransport(() => ({ status: 200, headers: {}, dat
 
 describe('text actions', () => {
   it('concatenates values with a separator', async () => {
-    expect(
-      await concat.execute({ auth: noAuth, props: { texts: ['a', 'b', 'c'], separator: '-' } }),
-    ).toEqual({
-      result: 'a-b-c',
-    });
-    expect(await concat.execute({ auth: noAuth, props: { texts: [1, 2, 3] } })).toEqual({ result: '123' });
+    // Returns the joined string directly (AP `text-helper` concat shape) — not `{ result }`.
+    expect(await concat.execute({ auth: noAuth, props: { texts: ['a', 'b', 'c'], separator: '-' } })).toBe(
+      'a-b-c',
+    );
+    expect(await concat.execute({ auth: noAuth, props: { texts: [1, 2, 3] } })).toBe('123');
   });
 
   it('rejects a non-array concat input', async () => {

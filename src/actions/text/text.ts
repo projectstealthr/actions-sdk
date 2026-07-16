@@ -38,9 +38,6 @@ function build(pattern: string, useRegex: boolean, caseInsensitive: boolean, glo
 }
 
 export const CONCAT_TYPE = 'text.concat';
-export interface ConcatResult {
-  result: string;
-}
 export const concat = defineAction({
   type: CONCAT_TYPE,
   name: 'Concatenate',
@@ -50,7 +47,10 @@ export const concat = defineAction({
     texts: json({ label: 'Texts', description: 'A JSON array of values to join.', required: true }),
     separator: shortText({ label: 'Separator', required: false, defaultValue: '' }),
   },
-  run: ({ props }): Promise<ConcatResult> => {
+  // Returns the joined string DIRECTLY (not `{ result }`) — AP's `text-helper`
+  // concat returns a bare string, and the IR generator + existing workflows
+  // consume that shape. Wrapping it would silently break the upgrade.
+  run: ({ props }): Promise<string> => {
     if (!Array.isArray(props.texts)) {
       throw new ActionError({
         code: 'invalid_input',
@@ -61,7 +61,7 @@ export const concat = defineAction({
     const parts = props.texts.map((v) =>
       v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v),
     );
-    return Promise.resolve({ result: parts.join(props.separator ?? '') });
+    return Promise.resolve(parts.join(props.separator ?? ''));
   },
 });
 
