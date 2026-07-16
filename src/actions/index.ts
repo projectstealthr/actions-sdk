@@ -1,12 +1,19 @@
 /**
- * The clean-room reference catalog. Each entry is a different framework shape
- * (design §9) chosen to surface the SDK's hard cases before scaling:
+ * The clean-room reference catalog + the ported app catalog.
+ *
+ * Reference shapes (design §9) — one of each hard framework case:
  *  - slack.send_channel_message — dynamic dropdown (live picker), managed rail
  *  - slack.list_channels        — cursor pagination, managed rail
  *  - github.list_issues         — Link-header pagination, direct rail, apiKey scheme
  *  - slack.new_message          — webhook trigger (app-level: handshake + signature + transform)
  *  - github.new_push            — registered webhook trigger (onEnable/onDisable + signature)
  *  - slack.new_channel          — polling trigger (dedup)
+ *
+ * Ported no-auth utility apps (AP-retirement phase 1) — pure, dependency-free,
+ * offline, zero-marginal-cost: `http, text, date, math, json, xml, csv, crypto,
+ * data_mapper, graphql, hackernews, binance`. These are the self-host core
+ * Composio cannot serve. Polling triggers (`http.new_item`, `hackernews.new_story`,
+ * `rss.new_item`) exercise the SDK polling framework end to end.
  */
 export * as slack from './slack';
 export * as github from './github';
@@ -34,6 +41,20 @@ export * as dropbox from './dropbox';
 export * as typeform from './typeform';
 export * as zoom from './zoom';
 export * as outlook from './outlook';
+// Ported no-auth utility apps.
+export * as http from './http';
+export * as text from './text';
+export * as date from './date';
+export * as math from './math';
+export * as json from './json';
+export * as xml from './xml';
+export * as csv from './csv';
+export * as crypto from './crypto';
+export * as data_mapper from './data-mapper';
+export * as graphql from './graphql';
+export * as hackernews from './hackernews';
+export * as binance from './binance';
+export * as rss from './rss';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
@@ -62,6 +83,20 @@ import { dropboxActions } from './dropbox';
 import { typeformActions } from './typeform';
 import { zoomActions } from './zoom';
 import { outlookActions } from './outlook';
+// Ported utility apps: action arrays + polling triggers.
+import { httpActions, newItem as httpNewItem } from './http';
+import { textActions } from './text';
+import { dateActions } from './date';
+import { mathActions } from './math';
+import { jsonActions } from './json';
+import { xmlActions } from './xml';
+import { csvActions } from './csv';
+import { cryptoActions } from './crypto';
+import { dataMapperActions } from './data-mapper';
+import { graphqlActions } from './graphql';
+import { hackernewsActions, newStory as hackernewsNewStory } from './hackernews';
+import { binanceActions } from './binance';
+import { newItem as rssNewItem } from './rss';
 
 /** Every reference action, for catalog builds and registration. */
 export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
@@ -70,9 +105,40 @@ export const referenceActions = [sendChannelMessage, listChannels, listIssues, g
 export const referenceTriggers = [newMessage, newChannel, newPush] as const;
 
 /**
+ * The ported no-auth utility actions, grouped for discoverability. These need no
+ * credential (`none` scheme), run in-process at zero marginal cost, and work
+ * offline — the self-host core the AP-retirement plan carries over first.
+ */
+export const utilityActions = [
+  ...httpActions,
+  ...textActions,
+  ...dateActions,
+  ...mathActions,
+  ...jsonActions,
+  ...xmlActions,
+  ...csvActions,
+  ...cryptoActions,
+  ...dataMapperActions,
+  ...graphqlActions,
+  ...hackernewsActions,
+  ...binanceActions,
+];
+
+/**
+ * Every registered polling trigger, flattened for catalog projection + runtime
+ * registration — the polling counterpart of {@link catalogActions}. A consumer
+ * projects each via `.toManifest()` (same path the action registry uses) and
+ * drives one poll via `.runPoll({ auth, props, store })`; the SDK returns only
+ * events unseen since the stored cursor (watermark + bounded dedup set).
+ */
+export const pollingTriggers = [newChannel, httpNewItem, hackernewsNewStory, rssNewItem] as const;
+
+/** Every trigger the SDK ships — webhook + polling — for a unified catalog build. */
+export const catalogTriggers = [newMessage, newPush, ...pollingTriggers];
+
+/**
  * The full clean-room catalog — every app's actions, flattened for catalog
- * builds and provider registration. Grows app-by-app as the SDK scales beyond
- * the reference set.
+ * builds and provider registration. Grows app-by-app as the SDK scales.
  */
 export const catalogActions = [
   sendChannelMessage,
@@ -104,4 +170,5 @@ export const catalogActions = [
   ...typeformActions,
   ...zoomActions,
   ...outlookActions,
+  ...utilityActions,
 ];
