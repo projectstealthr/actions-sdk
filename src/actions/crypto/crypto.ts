@@ -10,7 +10,13 @@ import { checkbox, dropdown, longText, number, shortText } from '../../core/prop
  * dependency-free and runs offline. AP's hyphenated types (`hash-text`,
  * `hmac-signature`, …) are re-spelled snake_case for the SDK namespace.
  *
- * Deferred to a later phase (needs the `openpgp` dependency): `openpgp_encrypt`.
+ * Deferred on licensing grounds: `openpgp_encrypt`. The canonical implementation
+ * (openpgp.js, all versions) is LGPL-3.0 — copyleft, outside the permissive
+ * allowlist (MIT/Apache-2.0/BSD/ISC). The only permissive pure-JS alternative
+ * (kbpgp, BSD-3-Clause) is unmaintained (unacceptable for a crypto dependency),
+ * and the `gpg` npm wrapper shells out to the GPL GnuPG binary. Revisit if the
+ * owner accepts LGPL for this one leaf dep, or a maintained permissive OpenPGP
+ * library emerges.
  */
 
 type TextEncoding = 'hex' | 'base64';

@@ -1,15 +1,17 @@
+import { XMLParser, XMLValidator } from 'fast-xml-parser';
+
 import { defineAction } from '../../core/action';
+import { ActionError } from '../../core/errors';
 import type { JsonValue } from '../../core/http/types';
-import { json, shortText } from '../../core/props';
+import { checkbox, json, longText, shortText } from '../../core/props';
 
 /**
  * XML utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `xml` piece. A dependency-free JSON→XML serialiser. AP's hyphenated types
- * (`convert-json-to-xml`) are re-spelled snake_case for the SDK namespace.
- *
- * Deferred to a later phase (a correct XML→JSON parser needs a real XML parser —
- * CDATA, namespaces, entities, comments — out of scope for the dependency-free
- * phase-1): `convert_xml_to_json`.
+ * `xml` piece. The JSON→XML serialiser is dependency-free; `convert_xml_to_json`
+ * uses `fast-xml-parser` (MIT) for a correct parse (CDATA, namespaces, entities,
+ * comments). AP's hyphenated action names (`convert-json-to-xml`,
+ * `convert-xml-to-json`) are re-spelled snake_case for the SDK namespace, which
+ * forbids hyphens.
  */
 
 function escapeXml(text: string): string {
@@ -68,5 +70,40 @@ export const convertJsonToXml = defineAction({
     }
     const result = `<?xml version="1.0" encoding="UTF-8"?>\n<${root}>\n${body}\n</${root}>`;
     return Promise.resolve({ result });
+  },
+});
+
+export const XML_TO_JSON_TYPE = 'xml.convert_xml_to_json';
+export interface XmlToJsonResult {
+  result: JsonValue;
+}
+export const convertXmlToJson = defineAction({
+  type: XML_TO_JSON_TYPE,
+  name: 'Convert XML to JSON',
+  description: 'Parse an XML document into a JSON value.',
+  auth: { type: 'none' },
+  props: {
+    xml: longText({ label: 'XML', description: 'The XML string to convert.', required: true }),
+    ignoreAttributes: checkbox({
+      label: 'Ignore Attributes',
+      description: 'When off, attributes are included with an "@_" prefix (e.g. id="42" → {"@_id": "42"}).',
+      required: false,
+      defaultValue: false,
+    }),
+  },
+  run: ({ props }): Promise<XmlToJsonResult> => {
+    const validation = XMLValidator.validate(props.xml);
+    if (validation !== true) {
+      throw new ActionError({
+        code: 'invalid_input',
+        message: `Invalid XML: ${validation.err.msg}`,
+        retryable: false,
+      });
+    }
+    const parser = new XMLParser({
+      ignoreAttributes: props.ignoreAttributes ?? false,
+      ignoreDeclaration: true,
+    });
+    return Promise.resolve({ result: parser.parse(props.xml) as JsonValue });
   },
 });

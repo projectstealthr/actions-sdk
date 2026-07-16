@@ -1,5 +1,5 @@
 import { FakeTransport, stubAuth } from '../../testing/fakes';
-import { convertJsonToText, convertTextToJson, jsonActions, mergeJson } from './index';
+import { convertJsonToText, convertTextToJson, jsonActions, mergeJson, runJsonataQuery } from './index';
 
 const noAuth = stubAuth(new FakeTransport(() => ({ status: 200, headers: {}, data: {} })));
 
@@ -45,8 +45,41 @@ describe('json actions', () => {
     ).rejects.toMatchObject({ code: 'invalid_input' });
   });
 
-  it('exposes three actions, all json.* typed', () => {
-    expect(jsonActions).toHaveLength(3);
+  it('runs a JSONata query that filters and maps', async () => {
+    const data = [
+      { status: 'active', name: 'Ann', age: 30 },
+      { status: 'off', name: 'Bob', age: 5 },
+      { status: 'active', name: 'Cy', age: 41 },
+    ];
+    const filtered = await runJsonataQuery.execute({
+      auth: noAuth,
+      props: { data, query: '$[status="active"].name' },
+    });
+    expect(filtered.result).toEqual(['Ann', 'Cy']);
+
+    const aggregated = await runJsonataQuery.execute({
+      auth: noAuth,
+      props: { data, query: '$sum(age)' },
+    });
+    expect(aggregated.result).toBe(76);
+  });
+
+  it('returns null when a JSONata query matches nothing', async () => {
+    const out = await runJsonataQuery.execute({
+      auth: noAuth,
+      props: { data: [{ a: 1 }], query: '$[b=2]' },
+    });
+    expect(out.result).toBeNull();
+  });
+
+  it('rejects an invalid JSONata expression', async () => {
+    await expect(
+      runJsonataQuery.execute({ auth: noAuth, props: { data: {}, query: '$[' } }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+
+  it('exposes four actions, all json.* typed', () => {
+    expect(jsonActions).toHaveLength(4);
     for (const action of jsonActions) expect(action.type.startsWith('json.')).toBe(true);
   });
 });

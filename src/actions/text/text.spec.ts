@@ -2,9 +2,12 @@ import { FakeTransport, stubAuth } from '../../testing/fakes';
 import {
   concat,
   defaultValue,
+  extractFromHtml,
   find,
   findAll,
+  htmlToMarkdown,
   jsonToAsciiTable,
+  markdownToHtml,
   replace,
   slugify,
   split,
@@ -108,8 +111,99 @@ describe('text actions', () => {
     expect(out.table.split('\n').length).toBeGreaterThanOrEqual(5);
   });
 
-  it('exposes nine actions, all text.* typed', () => {
-    expect(textActions).toHaveLength(9);
+  it('converts markdown to HTML honouring options', async () => {
+    const out = await markdownToHtml.execute({
+      auth: noAuth,
+      props: { markdown: '# Title\n\nHello **world**' },
+    });
+    expect(out.html).toContain('<h1');
+    expect(out.html).toContain('<strong>world</strong>');
+  });
+
+  it('shifts the minimum header level and rejects out-of-range levels', async () => {
+    const out = await markdownToHtml.execute({
+      auth: noAuth,
+      props: { markdown: '# Title', headerLevelStart: 3 },
+    });
+    expect(out.html).toContain('<h3');
+    await expect(
+      markdownToHtml.execute({ auth: noAuth, props: { markdown: '# x', headerLevelStart: 9 } }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+
+  it('converts HTML to markdown and strips scripts', async () => {
+    const out = await htmlToMarkdown.execute({
+      auth: noAuth,
+      props: { html: '<h1>Title</h1><p>Hello <strong>world</strong></p><script>alert(1)</script>' },
+    });
+    expect(out.markdown).toContain('Title');
+    expect(out.markdown).toContain('**world**');
+    expect(out.markdown).not.toContain('alert(1)');
+  });
+
+  it('round-trips markdown → HTML → markdown', async () => {
+    const markdown = '# Heading\n\nA paragraph with **bold** text.';
+    const html = (await markdownToHtml.execute({ auth: noAuth, props: { markdown } })).html;
+    const back = (await htmlToMarkdown.execute({ auth: noAuth, props: { html } })).markdown;
+    expect(back).toContain('Heading');
+    expect(back).toContain('**bold**');
+  });
+
+  it('extracts the title, links, and headings from HTML', async () => {
+    const html =
+      '<html><head><title>Doc</title></head><body>' +
+      '<a href="/a">A</a><a href="/b">B</a><h1>H1</h1><h2>H2</h2></body></html>';
+    const title = await extractFromHtml.execute({ auth: noAuth, props: { html, target: 'title' } });
+    expect(title.result).toBe('Doc');
+
+    const links = await extractFromHtml.execute({
+      auth: noAuth,
+      props: {
+        html,
+        target: 'links',
+        extractionType: 'attribute',
+        attributeName: 'href',
+        returnMultiple: true,
+      },
+    });
+    expect(links.result).toEqual(['/a', '/b']);
+
+    const headings = await extractFromHtml.execute({
+      auth: noAuth,
+      props: { html, target: 'headings', returnMultiple: true },
+    });
+    expect(headings.result).toEqual(['H1', 'H2']);
+  });
+
+  it('supports a custom selector and returns null on no match', async () => {
+    const html = '<div class="price">$9.99</div>';
+    const hit = await extractFromHtml.execute({
+      auth: noAuth,
+      props: { html, target: 'custom', selector: '.price' },
+    });
+    expect(hit.result).toBe('$9.99');
+
+    const miss = await extractFromHtml.execute({
+      auth: noAuth,
+      props: { html, target: 'custom', selector: '.missing' },
+    });
+    expect(miss.result).toBeNull();
+  });
+
+  it('rejects a custom target with no selector and an attribute type with no name', async () => {
+    await expect(
+      extractFromHtml.execute({ auth: noAuth, props: { html: '<p>x</p>', target: 'custom' } }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+    await expect(
+      extractFromHtml.execute({
+        auth: noAuth,
+        props: { html: '<a href="/x">y</a>', target: 'links', extractionType: 'attribute' },
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+
+  it('exposes twelve actions, all text.* typed', () => {
+    expect(textActions).toHaveLength(12);
     for (const action of textActions) expect(action.type.startsWith('text.')).toBe(true);
   });
 });
