@@ -102,6 +102,36 @@ Five deliberately different shapes (design §9), each live-tested against a real
 
 See `docs/FRAMEWORK-NOTES.md` for the hard cases these surfaced.
 
+## Ported no-auth utility apps (AP-retirement phase 1)
+
+The first wave of the Activepieces retirement: the 12 highest-value / lowest-risk **no-auth
+utility apps**, re-implemented clean-room with **zero runtime dependencies** (Node built-ins only).
+They need no credential (`none` scheme), run in-process at zero marginal cost, and work offline —
+the self-host core Composio structurally cannot serve. Exposed via `actions.utilityActions` (folded
+into `actions.catalogActions`).
+
+| App | Actions | App | Actions |
+|---|---|---|---|
+| `http` | `send_request`, `parse_url` | `crypto` | hash / hmac / rsa / base64 / password (6) |
+| `text` | concat/replace/split/find/… (9) | `csv` | csv↔json (2) |
+| `date` | format / diff / add-subtract / … (9) | `xml` | json→xml (1) |
+| `math` | add/sub/mul/div/mod/random (6) | `data_mapper` | advanced_mapping (1) |
+| `json` | to-text / to-json / merge (3) | `graphql` | send_request (1) |
+| `hackernews` | fetch_top_stories (1) | `binance` | fetch_crypto_pair_price (1) |
+
+**Polling-trigger framework** — the SDK's `defineTrigger(polling)` contract is now wired end to end
+and projected via `actions.pollingTriggers` (the polling counterpart of `catalogActions`; a consumer
+projects each with `.toManifest()` and drives one poll via `.runPoll({ auth, props, store })`). The
+framework returns only events unseen since the stored cursor (a `lastPolledAt` watermark + a bounded
+`seen` dedup set — the same TIMEBASED semantics as the AP polling framework and the
+`pollViaComposio` reroute). Reference polling triggers: `http.new_item`, `hackernews.new_story`,
+`rss.new_item` (plus the pre-existing `slack.new_channel`).
+
+Deferred to a later phase (need a heavy third-party lib, which the dependency-free phase-1 avoids):
+the `pdf` app + `qrcode`, plus `text.markdown_to_html`/`html_to_markdown`/`extract_from_html`,
+`json.run_jsonata_query`, `csv.convert_excel_to_csv`, `xml.convert_xml_to_json`,
+`crypto.openpgp_encrypt`.
+
 ## Testing
 
 ```bash
@@ -136,6 +166,8 @@ src/
       pagination.ts, retry.ts, types.ts
   actions/
     slack/, github/              # the reference catalog
+    http/, text/, date/, math/…  # ported no-auth utility apps (phase 1)
+    rss/                         # trigger-only: rss.new_item polling
   testing/                       # live gate, Composio harness, in-memory store, fakes
 ```
 
