@@ -21,6 +21,7 @@ export interface NormalizedFailure {
 /** Stable machine codes so callers can branch without string-matching messages. */
 export type ActionErrorCode =
   | 'invalid_input'
+  | 'ssrf_blocked'
   | 'auth_missing'
   | 'auth_unsupported'
   | 'transport_unreachable'
