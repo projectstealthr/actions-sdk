@@ -139,5 +139,24 @@ export {
   toManifestEntry,
 } from './core/catalog';
 
+// The tool-aware model call for the AI Agent node (ADR 0045) — a loop-internal
+// engine primitive the service binds to its `AgentModelPort`, not a catalog action.
+export {
+  type AgentConversationMessage,
+  type AgentModelAdapter,
+  agentModelAdapters,
+  type AgentModelRequest,
+  type AgentModelResult,
+  type AgentProvider,
+  type AgentToolCall,
+  type AgentToolSchema,
+  type AgentUsage,
+  anthropicAgentAdapter,
+  callAgentModel,
+  geminiAgentAdapter,
+  mistralAgentAdapter,
+  openaiAgentAdapter,
+} from './actions/ai/agent-model';
+
 // Reference actions + triggers.
 export * as actions from './actions';
