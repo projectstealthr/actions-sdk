@@ -8,6 +8,7 @@ import {
   calendarIdProp,
   defaultEnd,
   eventsUrl,
+  sendUpdatesProp,
   toAttendees,
 } from './common';
 
@@ -56,6 +57,7 @@ export const createEvent = defineAction({
       description: 'Array of attendee email addresses.',
       required: false,
     }),
+    sendUpdates: sendUpdatesProp(),
   },
   async run({ auth, props, http }): Promise<CalendarEvent> {
     const body: Record<string, JsonValue> = {
@@ -66,7 +68,12 @@ export const createEvent = defineAction({
     if (props.location !== undefined) body.location = props.location;
     if (props.description !== undefined) body.description = props.description;
     if (props.attendees !== undefined) body.attendees = toAttendees(props.attendees);
-    const res = await http.post<CalendarEvent>(eventsUrl(props.calendarId), { auth, body });
+    const res = await http.post<CalendarEvent>(eventsUrl(props.calendarId), {
+      auth,
+      body,
+      // Email attendees the invite (defaults to 'all'); else Google adds them silently.
+      query: { sendUpdates: props.sendUpdates },
+    });
     return res.data;
   },
 });
@@ -150,6 +157,7 @@ export const updateEvent = defineAction({
     end: dateTime({ label: 'End', description: 'New end time (RFC3339).', required: false }),
     location: shortText({ label: 'Location', required: false }),
     description: longText({ label: 'Description', required: false }),
+    sendUpdates: sendUpdatesProp(),
   },
   async run({ auth, props, http }): Promise<CalendarEvent> {
     const body: Record<string, JsonValue> = {};
@@ -158,7 +166,12 @@ export const updateEvent = defineAction({
     if (props.end !== undefined) body.end = timed(props.end);
     if (props.location !== undefined) body.location = props.location;
     if (props.description !== undefined) body.description = props.description;
-    const res = await http.patch<CalendarEvent>(eventsUrl(props.calendarId, props.eventId), { auth, body });
+    const res = await http.patch<CalendarEvent>(eventsUrl(props.calendarId, props.eventId), {
+      auth,
+      body,
+      // Email attendees the update (defaults to 'all'); else the change is silent.
+      query: { sendUpdates: props.sendUpdates },
+    });
     return res.data;
   },
 });
@@ -178,9 +191,14 @@ export const deleteEvent = defineAction({
   props: {
     calendarId: calendarIdProp(),
     eventId: shortText<true>({ label: 'Event id', required: true }),
+    sendUpdates: sendUpdatesProp(),
   },
   async run({ auth, props, http }): Promise<DeleteEventResult> {
-    await http.delete(eventsUrl(props.calendarId, props.eventId), { auth });
+    await http.delete(eventsUrl(props.calendarId, props.eventId), {
+      auth,
+      // Email attendees the cancellation (defaults to 'all'); else it is silent.
+      query: { sendUpdates: props.sendUpdates },
+    });
     return { deleted: true, eventId: props.eventId };
   },
 });

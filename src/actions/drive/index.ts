@@ -8,6 +8,8 @@ export {
   listFiles,
 } from './files';
 
+export { DRIVE_NEW_FILE_TYPE, newFile, type DriveFileEvent } from './new-file.polling';
+
 import { createFolder, getFile, listFiles } from './files';
 
 /** Every Google Drive action, for catalog builds and registration. */

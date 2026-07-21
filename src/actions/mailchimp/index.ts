@@ -23,6 +23,8 @@ export {
   updateMember,
 } from './members';
 
+export { NEW_SUBSCRIBER_TYPE, newSubscriber, type MailchimpSubscriberEvent } from './new-subscriber.polling';
+
 import { getList, listAudiences, listCampaigns } from './lists';
 import { addMember, getMember, updateMember } from './members';
 

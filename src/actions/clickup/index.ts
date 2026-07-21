@@ -24,6 +24,8 @@ export {
   updateTask,
 } from './tasks';
 
+export { NEW_TASK_TYPE, newTask, type ClickupTaskEvent } from './new-task.webhook';
+
 import { createTask, getTask, listTasks, updateTask } from './tasks';
 
 /** Every ClickUp action, for catalog builds and registration. */

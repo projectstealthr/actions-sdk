@@ -53,7 +53,8 @@ describe('calendar.create_google_calendar_event', () => {
     expect(out.id).toBe('e1');
     const req = transport.requests[0]!;
     expect(req.method).toBe('POST');
-    expect(req.url).toBe('https://www.googleapis.com/calendar/v3/calendars/primary/events');
+    // sendUpdates defaults to 'all' so attendees are actually emailed the invite.
+    expect(req.url).toBe('https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all');
     const body = req.body as {
       summary: string;
       start: { dateTime: string };
@@ -131,6 +132,18 @@ describe('calendar.update_event', () => {
     const req = transport.requests[0]!;
     expect(req.method).toBe('PATCH');
     expect(req.body).toEqual({ summary: 'Renamed' });
+    // The update is emailed to attendees (default 'all').
+    expect(req.url).toContain('sendUpdates=all');
+  });
+
+  it('passes an explicit sendUpdates choice through', async () => {
+    const { auth, http, transport } = fake(() => ({ status: 200, headers: {}, data: { id: 'e1' } }));
+    await updateEvent.execute({
+      auth,
+      http,
+      props: { calendarId: 'primary', eventId: 'e1', title: 'Quiet', sendUpdates: 'none' },
+    });
+    expect(transport.requests[0]!.url).toContain('sendUpdates=none');
   });
 });
 
@@ -140,6 +153,8 @@ describe('calendar.delete_event', () => {
     const out = await deleteEvent.execute({ auth, http, props: { calendarId: 'primary', eventId: 'e1' } });
     expect(out).toEqual({ deleted: true, eventId: 'e1' });
     expect(transport.requests[0]!.method).toBe('DELETE');
+    // The cancellation is emailed to attendees (default 'all').
+    expect(transport.requests[0]!.url).toContain('sendUpdates=all');
   });
 });
 

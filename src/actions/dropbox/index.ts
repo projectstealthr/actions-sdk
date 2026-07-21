@@ -21,6 +21,8 @@ export {
   search,
 } from './files';
 
+export { DROPBOX_NEW_FILE_TYPE, newFile, type DropboxFileEvent } from './new-file.polling';
+
 import { createFolder, getFileMetadata, getTemporaryLink, listFolder, search } from './files';
 
 /** Every Dropbox action, for catalog builds and registration. */

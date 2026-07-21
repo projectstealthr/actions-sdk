@@ -10,6 +10,7 @@ export {
   updateTicket,
 } from './tickets';
 export { LIST_USERS_TYPE, listUsers, SEARCH_TYPE, search } from './other';
+export { NEW_TICKET_TYPE, newTicket, type ZendeskTicketEvent } from './new-ticket.polling';
 
 import { listUsers, search } from './other';
 import { createTicket, getTicket, listTickets, updateTicket } from './tickets';

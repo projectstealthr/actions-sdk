@@ -20,6 +20,7 @@ export {
   updateRecord,
 } from './records';
 export { LIST_BASES_TYPE, listBases } from './bases';
+export { AIRTABLE_NEW_RECORD_TYPE, newRecord, type AirtableRecordEvent } from './new-record.polling';
 
 import { listBases } from './bases';
 import { createRecord, deleteRecord, getRecord, listRecords, updateRecord } from './records';

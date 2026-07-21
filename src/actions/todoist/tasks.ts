@@ -83,11 +83,19 @@ export const getTasks = defineAction({
     }),
   },
   async run({ auth, props, http }): Promise<{ tasks: TodoistTask[]; count: number }> {
+    // A natural-language filter must go to the dedicated filter endpoint: plain
+    // GET /api/v1/tasks IGNORES a `filter`/`query` param and returns every active
+    // task, so scoping only works via GET /api/v1/tasks/filter?query=<filter>.
+    // Both endpoints share the `{ results, next_cursor }` envelope + `?cursor=` paging.
+    const hasFilter = typeof props.filter === 'string' && props.filter.trim() !== '';
+    const { url, query } = hasFilter
+      ? { url: `${TODOIST_API_BASE}/tasks/filter`, query: { query: props.filter } }
+      : { url: `${TODOIST_API_BASE}/tasks`, query: { project_id: props.project } };
     const tasks = await paginate<TodoistTask>({
       auth,
       http,
-      url: `${TODOIST_API_BASE}/tasks`,
-      query: { project_id: props.project, filter: props.filter },
+      url,
+      query,
       extractItems: (res) => (res.data as TodoistPage<TodoistTask>)?.results ?? [],
       nextPage: todoistNextPage,
       maxItems: 500,

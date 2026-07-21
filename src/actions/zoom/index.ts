@@ -22,6 +22,8 @@ export {
   type ZoomMeetingMutationResult,
 } from './meetings';
 
+export { ZOOM_NEW_RECORDING_TYPE, newRecording, type ZoomRecordingEvent } from './new-recording.polling';
+
 import { createMeeting, deleteMeeting, getMeeting, listMeetings, updateMeeting } from './meetings';
 
 /** Every Zoom action, for catalog builds and registration. */

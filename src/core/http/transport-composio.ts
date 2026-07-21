@@ -1,6 +1,7 @@
 import { ActionError } from '../errors';
 import {
   type FetchLike,
+  isFormBody,
   isMultipartBody,
   type JsonValue,
   type NormalizedRequest,
@@ -183,6 +184,15 @@ export class ComposioProxyTransport implements Transport {
         retryable: false,
       });
     }
+    if (isFormBody(request.body)) {
+      throw new ActionError({
+        code: 'unsupported_body',
+        message:
+          'form-encoded bodies need a direct (bring-your-own) connection — the managed proxy carries JSON only',
+        status: 0,
+        retryable: false,
+      });
+    }
     if (request.responseType === 'binary') {
       throw new ActionError({
         code: 'unsupported_body',
@@ -219,7 +229,13 @@ export class ComposioProxyTransport implements Transport {
    * the same limitation the platform's managed transport documents.
    */
   private assertProxyableBody(body: RequestBody): JsonValue {
-    if (!isMultipartBody(body) && typeof body === 'object' && body !== null && !Array.isArray(body)) {
+    if (
+      !isMultipartBody(body) &&
+      !isFormBody(body) &&
+      typeof body === 'object' &&
+      body !== null &&
+      !Array.isArray(body)
+    ) {
       return body;
     }
     throw new ActionError({

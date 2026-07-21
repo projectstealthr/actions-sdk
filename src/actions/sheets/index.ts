@@ -31,6 +31,8 @@ export {
   listSheets,
 } from './tabs';
 
+export { SHEETS_NEW_ROW_TYPE, newRow, type SheetRowEvent } from './new-row.polling';
+
 import { createSpreadsheet, listSheets } from './tabs';
 import { clearSheet, insertRow, readRange, updateRow } from './values';
 

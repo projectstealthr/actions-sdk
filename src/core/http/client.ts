@@ -1,5 +1,6 @@
 import { type AuthHandle, transportOf } from '../auth';
 import { ActionError, isRetryableStatus, type NormalizedFailure } from '../errors';
+import { buildForm, type FormInput } from './form';
 import { buildMultipart, type MultipartInput } from './multipart';
 import { backoffDelay, DEFAULT_RETRY_POLICY, parseRetryAfter, type RetryPolicy, sleep } from './retry';
 import {
@@ -28,6 +29,12 @@ export interface RequestOptions {
    * Rides only the direct rail — the managed proxy rejects it loudly (JSON only).
    */
   multipart?: MultipartInput;
+  /**
+   * An `application/x-www-form-urlencoded` body — for providers whose writes take
+   * form bodies, not JSON (Stripe's REST API). Mutually exclusive with `body`/
+   * `multipart`. Rides only the direct rail — the managed proxy rejects it (JSON only).
+   */
+  form?: FormInput;
   /**
    * `'binary'` returns the raw response bytes as a `Buffer` in `data` (for
    * downloading a file). Defaults to `'json'` (parse JSON, else raw text).
@@ -107,17 +114,23 @@ export class HttpClient {
   ): Promise<HttpResponse<T>> {
     const transport = transportOf(options.auth);
     const headers = { ...this.defaultHeaders, ...normalizeHeaders(options.headers) };
-    if (options.body !== undefined && options.multipart !== undefined) {
+    const bodyKinds = [options.body, options.multipart, options.form].filter((b) => b !== undefined).length;
+    if (bodyKinds > 1) {
       throw new ActionError({
         code: 'invalid_input',
-        message: 'pass either `body` (JSON) or `multipart` (files), not both',
+        message: 'pass exactly one of `body` (JSON), `multipart` (files), or `form` (url-encoded)',
         retryable: false,
       });
     }
-    // The multipart body carries its own Content-Type (with boundary), set by the
-    // transport when it encodes; only a JSON `body` gets the default json header.
+    // The multipart/form bodies carry their own Content-Type (boundary /
+    // url-encoded), set by the transport when it encodes; only a JSON `body` gets
+    // the default json header.
     const body: RequestBody | undefined =
-      options.multipart !== undefined ? buildMultipart(options.multipart) : options.body;
+      options.multipart !== undefined
+        ? buildMultipart(options.multipart)
+        : options.form !== undefined
+          ? buildForm(options.form)
+          : options.body;
     if (options.body !== undefined && !('content-type' in headers)) {
       headers['content-type'] = 'application/json';
     }

@@ -101,6 +101,30 @@ export function calendarIdProp(): DropdownSchema<string, true> {
   });
 }
 
+/**
+ * `sendUpdates` controls whether Google emails attendees on create/update/delete.
+ * Google DEFAULTS this to `false`/`none` on the API, so without it attendees are
+ * silently added but never notified — the opposite of what the Calendar UI does.
+ * We surface it defaulting to `all` so invites/updates/cancellations actually send.
+ * Values: https://developers.google.com/workspace/calendar/api/v3/reference/events/insert
+ */
+export const SEND_UPDATES_OPTIONS: DropdownOption<string>[] = [
+  { label: 'All guests', value: 'all' },
+  { label: 'External guests only', value: 'externalOnly' },
+  { label: 'No one', value: 'none' },
+];
+
+/** The optional, default-`all` `sendUpdates` prop shared by create/update/delete. */
+export function sendUpdatesProp(): DropdownSchema<string, false> {
+  return dropdown<string, false>({
+    label: 'Notify guests',
+    description: 'Email the invite/update/cancellation to attendees.',
+    required: false,
+    options: SEND_UPDATES_OPTIONS,
+    defaultValue: 'all',
+  });
+}
+
 /** Build a `/calendars/{calendarId}/events[/{eventId}]` URL, encoding each segment. */
 export function eventsUrl(calendarId: string, eventId?: string): string {
   const base = `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarId)}/events`;

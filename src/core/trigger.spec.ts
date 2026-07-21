@@ -19,7 +19,7 @@ function slackChannels(channels: Array<{ id: string; name: string }>): Normalize
 }
 
 describe('polling trigger (slack.new_channel)', () => {
-  it('emits new items on first poll, then dedupes on the next', async () => {
+  it('baselines existing channels on the first poll, then fires only genuinely-new ones (INV-1)', async () => {
     const transport = new FakeTransport(() =>
       slackChannels([
         { id: 'C1', name: 'general' },
@@ -29,10 +29,13 @@ describe('polling trigger (slack.new_channel)', () => {
     const auth = stubAuth(transport);
     const store = new MemoryStore();
 
+    // First poll = baseline: the channels present at activation are recorded but
+    // emit ZERO events (activation must not fire the whole channel list).
     const first = await newChannel.runPoll({ auth, props: {}, store });
-    expect(first.events.map((c) => c.id)).toEqual(['C1', 'C2']);
+    expect(first.events).toEqual([]);
     expect(typeof first.polledAt).toBe('string');
 
+    // Re-polling the same set still emits nothing.
     const second = await newChannel.runPoll({ auth, props: {}, store });
     expect(second.events).toEqual([]);
 
@@ -48,13 +51,50 @@ describe('polling trigger (slack.new_channel)', () => {
     expect(third.events.map((c) => c.id)).toEqual(['C3']);
   });
 
-  it('records the watermark and seen keys in the store', async () => {
-    const transport = new FakeTransport(() => slackChannels([{ id: 'C1', name: 'general' }]));
+  it('dedupes against the full known-set even when the SDK LRU seen has evicted the id', async () => {
+    // A large workspace: the trigger recorded C1 in its OWN uncapped known-set, but
+    // the SDK's LRU `seen` has since evicted it. Re-listing C1 must NOT re-fire it —
+    // the regression the head-window + LRU-only approach caused above DEDUPE_CAP.
+    // The known-set is already primed (defined), so this is a post-baseline poll.
     const store = new MemoryStore();
-    await newChannel.runPoll({ auth: stubAuth(transport), props: {}, store });
-    const snap = store.snapshot();
-    expect(snap.seen).toEqual(['C1']);
-    expect(typeof snap.lastPolledAt).toBe('string');
+    await store.set('known_channel_ids', ['C1']);
+    await store.set('seen', []);
+    const transport = new FakeTransport(() => slackChannels([{ id: 'C1', name: 'general' }]));
+    const result = await newChannel.runPoll({ auth: stubAuth(transport), props: {}, store });
+    expect(result.events).toEqual([]);
+  });
+
+  it('baselines the known-set + watermark on first poll, then records new keys in seen', async () => {
+    const store = new MemoryStore();
+    await newChannel.runPoll({
+      auth: stubAuth(new FakeTransport(() => slackChannels([{ id: 'C1', name: 'general' }]))),
+      props: {},
+      store,
+    });
+    const seeded = store.snapshot();
+    // Baseline poll: the existing channel is recorded in the trigger's OWN known-set
+    // (its watermark) and the SDK records lastPolledAt — but nothing fires, so the
+    // SDK's `seen` stays empty.
+    expect(seeded.known_channel_ids).toEqual(['C1']);
+    expect(seeded.seen).toEqual([]);
+    expect(typeof seeded.lastPolledAt).toBe('string');
+
+    // A genuinely-new channel now fires and lands in the SDK's `seen`.
+    await newChannel.runPoll({
+      auth: stubAuth(
+        new FakeTransport(() =>
+          slackChannels([
+            { id: 'C1', name: 'general' },
+            { id: 'C2', name: 'random' },
+          ]),
+        ),
+      ),
+      props: {},
+      store,
+    });
+    const after = store.snapshot();
+    expect(after.seen).toEqual(['C2']);
+    expect(after.known_channel_ids).toEqual(['C1', 'C2']);
   });
 });
 

@@ -24,6 +24,8 @@ export {
   listScheduledEvents,
 } from './events';
 
+export { NEW_INVITEE_TYPE, newInvitee, type CalendlyInviteeEvent } from './new-invitee.webhook';
+
 import {
   cancelScheduledEvent,
   getCurrentUserAction,

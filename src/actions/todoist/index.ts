@@ -20,6 +20,8 @@ export {
   updateTask,
 } from './tasks';
 
+export { NEW_TASK_TYPE, newTask } from './new-task.polling';
+
 import { closeTask, createTask, getTasks, updateTask } from './tasks';
 
 /** Every Todoist action, for catalog builds and registration. */

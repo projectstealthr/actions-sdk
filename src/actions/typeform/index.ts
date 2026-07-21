@@ -21,6 +21,7 @@ export {
   listFormsAction,
 } from './forms';
 export { LIST_RESPONSES_TYPE, listResponses } from './responses';
+export { NEW_RESPONSE_TYPE, newResponse, type TypeformResponseEvent } from './new-response.webhook';
 
 import { getForm, getFormFields, listFormsAction } from './forms';
 import { listResponses } from './responses';

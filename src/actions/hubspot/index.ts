@@ -23,6 +23,7 @@ export {
 } from './contacts';
 export { CREATE_DEAL_TYPE, createDeal } from './deals';
 export { LIST_OWNERS_TYPE, listOwners } from './owners';
+export { NEW_CONTACT_TYPE, newContact, type HubspotContactEvent } from './new-contact.polling';
 
 import { createContact, getContact, listContacts, searchContacts, updateContact } from './contacts';
 import { createDeal } from './deals';

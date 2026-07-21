@@ -12,10 +12,17 @@ import { dropdown, type DropdownOption, type DropdownSchema } from '../../core/p
 
 export const ZOOM_API_BASE = 'https://api.zoom.us/v2';
 
-/** Zoom authenticates with an OAuth2 bearer access token, attached by the transport. */
+/**
+ * Zoom authenticates with an OAuth2 bearer access token, attached by the
+ * transport. Declared with Zoom's 2024 GRANULAR scope names — the classic
+ * `meeting:read` etc. are being retired, and a BYO own-client app can only
+ * request the granular forms. `user:read:list_users:admin` backs the host picker
+ * (account-level user listing); it degrades gracefully when the plan lacks it.
+ * Scopes: https://developers.zoom.us/docs/integrations/oauth-scopes-granular/
+ */
 export const zoomAuth: OAuth2Scheme = {
   type: 'oauth2',
-  scopes: ['meeting:read', 'meeting:write', 'user:read'],
+  scopes: ['meeting:read:meeting', 'meeting:write:meeting', 'user:read:user', 'user:read:list_users:admin'],
 };
 
 /** A Zoom meeting (as returned by create/get). Fields Zoom may omit are optional. */
@@ -67,8 +74,8 @@ export async function listUsers(http: HttpClient, auth: AuthHandle): Promise<Zoo
 
 /**
  * Live host picker — independent of any other prop (it lists the account's
- * users). Requires an account-level scope (`user:read:admin`); on a plan without
- * it, Zoom 4xxs and the platform degrades the field to free text. The meeting
+ * users). Requires an account-level scope (`user:read:list_users:admin`); on a
+ * plan without it, Zoom 4xxs and the platform degrades the field to free text. The meeting
  * host id is the user's canonical `id`; leaving the field blank means "me".
  */
 export async function userOptions(http: HttpClient, auth: AuthHandle): Promise<DropdownOption<string>[]> {

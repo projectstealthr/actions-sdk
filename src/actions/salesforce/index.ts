@@ -19,6 +19,8 @@ export {
   updateRecord,
 } from './records';
 
+export { NEW_RECORD_TYPE, newRecord, type SalesforceRecordEvent } from './new-record.polling';
+
 import { createRecord, deleteRecord, getRecord, runQuery, search, updateRecord } from './records';
 
 /** Every Salesforce action, for catalog builds and registration. */

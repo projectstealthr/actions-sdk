@@ -1,6 +1,7 @@
 import { HttpClient } from '../../core/http/client';
 import type { NormalizedRequest, NormalizedResponse } from '../../core/http/types';
 import { FakeTransport, stubAuth } from '../../testing/fakes';
+import { zoomAuth } from './common';
 import { createMeeting, deleteMeeting, getMeeting, listMeetings, updateMeeting } from './meetings';
 
 /**
@@ -14,6 +15,17 @@ function fake(handler: (req: NormalizedRequest, i: number) => NormalizedResponse
   const transport = new FakeTransport(handler);
   return { auth: stubAuth(transport, 'oauth2'), http: new HttpClient(), transport };
 }
+
+describe('zoom auth scopes', () => {
+  it('declares the 2024 granular scope names (BYO own-client OAuth requires them)', () => {
+    expect(zoomAuth.scopes).toEqual([
+      'meeting:read:meeting',
+      'meeting:write:meeting',
+      'user:read:user',
+      'user:read:list_users:admin',
+    ]);
+  });
+});
 
 describe('zoom.zoom_create_meeting', () => {
   it('POSTs to the host’s meetings and defaults the host to "me" and type to scheduled', async () => {

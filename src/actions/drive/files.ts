@@ -41,6 +41,9 @@ export const listFiles = defineAction({
         pageSize: 100,
         orderBy: 'modifiedTime desc',
         fields: `nextPageToken,files(${DRIVE_FILE_FIELDS})`,
+        // Include shared drives, not just My Drive, in the listing + traversal.
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
       },
       extractItems: (res) => (res.data as { files?: DriveFile[] }).files ?? [],
       nextPage: cursorInBody({ cursorPath: ['nextPageToken'], cursorParam: 'pageToken' }),
@@ -62,7 +65,8 @@ export const getFile = defineAction({
   async run({ auth, props, http }): Promise<DriveFile> {
     const res = await http.get<DriveFile>(`${DRIVE_FILES_URL}/${encodeURIComponent(props.fileId)}`, {
       auth,
-      query: { fields: DRIVE_FILE_FIELDS },
+      // supportsAllDrives so an id that lives on a shared drive resolves (else 404).
+      query: { fields: DRIVE_FILE_FIELDS, supportsAllDrives: true },
     });
     return res.data;
   },
@@ -85,7 +89,8 @@ export const createFolder = defineAction({
   async run({ auth, props, http }): Promise<DriveFile> {
     const res = await http.post<DriveFile>(DRIVE_FILES_URL, {
       auth,
-      query: { fields: DRIVE_FILE_FIELDS },
+      // supportsAllDrives so a shared-drive parent is accepted (else 404).
+      query: { fields: DRIVE_FILE_FIELDS, supportsAllDrives: true },
       body: {
         name: props.name,
         mimeType: DRIVE_FOLDER_MIME,

@@ -41,7 +41,10 @@ export {
 export {
   type FetchLike,
   type FetchLikeResponse,
+  FORM,
+  type FormBody,
   type HttpMethod,
+  isFormBody,
   isMultipartBody,
   type JsonValue,
   MULTIPART,
@@ -60,6 +63,7 @@ export {
   type MultipartFileInput,
   type MultipartInput,
 } from './core/http/multipart';
+export { buildForm, encodeForm, type FormInput, type FormScalar } from './core/http/form';
 export { ComposioProxyTransport, type ComposioProxyTransportOptions } from './core/http/transport-composio';
 export { DirectTransport, type DirectTransportOptions } from './core/http/transport-direct';
 export {

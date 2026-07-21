@@ -20,6 +20,7 @@ export {
   sendEmail,
 } from './messages';
 export { LIST_FOLDERS_TYPE, listFolders } from './folders';
+export { OUTLOOK_NEW_EMAIL_TYPE, newEmail, type OutlookNewEmailEvent } from './new-email.polling';
 
 import { listFolders } from './folders';
 import { getMessage, listMessages, sendEmail } from './messages';

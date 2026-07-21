@@ -14,6 +14,7 @@ export {
   updateIssue,
 } from './issues';
 export { ADD_COMMENT_TYPE, addComment, type JiraComment, LIST_COMMENTS_TYPE, listComments } from './comments';
+export { NEW_ISSUE_TYPE, newIssue, type JiraIssueEvent } from './new-issue.polling';
 
 import { addComment, listComments } from './comments';
 import { createIssue, getIssue, searchIssues, updateIssue } from './issues';

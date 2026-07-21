@@ -38,7 +38,7 @@ describe('todoist.create_task', () => {
 });
 
 describe('todoist.find_task (get tasks)', () => {
-  it('scopes to a project and returns the cursor-paged results with a count', async () => {
+  it('scopes to a project (no filter) via GET /tasks?project_id=', async () => {
     const { auth, http, transport } = fake(() => ({
       status: 200,
       headers: {},
@@ -52,7 +52,24 @@ describe('todoist.find_task (get tasks)', () => {
     }));
     const out = await getTasks.execute({ auth, http, props: { project: 'P1' } });
     expect(out.count).toBe(2);
-    expect(transport.requests[0]!.url).toContain('project_id=P1');
+    const url = transport.requests[0]!.url;
+    expect(url).toContain('/api/v1/tasks?');
+    expect(url).toContain('project_id=P1');
+    expect(url).not.toContain('/tasks/filter');
+  });
+
+  it('routes a natural-language filter to GET /tasks/filter?query= (not the ignored /tasks?filter=)', async () => {
+    const { auth, http, transport } = fake(() => ({
+      status: 200,
+      headers: {},
+      data: { results: [{ id: 't9', content: 'overdue thing' }], next_cursor: null },
+    }));
+    const out = await getTasks.execute({ auth, http, props: { filter: 'today | overdue' } });
+    expect(out.count).toBe(1);
+    const url = decodeURIComponent(transport.requests[0]!.url).replace(/\+/g, ' ');
+    expect(url).toContain('/api/v1/tasks/filter?');
+    expect(url).toContain('query=today | overdue');
+    expect(url).not.toContain('filter=');
   });
 });
 

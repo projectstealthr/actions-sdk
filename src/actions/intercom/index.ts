@@ -25,6 +25,12 @@ export {
   listConversations,
 } from './other';
 
+export {
+  NEW_CONVERSATION_TYPE,
+  newConversation,
+  type IntercomConversationEvent,
+} from './new-conversation.polling';
+
 import { createContact, getContact, listContacts, searchContacts } from './contacts';
 import { listAdmins, listConversations } from './other';
 

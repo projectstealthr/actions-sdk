@@ -25,6 +25,7 @@ export {
   updateTask,
 } from './tasks';
 export { LIST_PROJECTS_TYPE, listProjects } from './projects';
+export { NEW_TASK_TYPE, newTask } from './new-task.polling';
 
 import { listProjects } from './projects';
 import { addComment, createTask, getTask, listTasks, updateTask } from './tasks';

@@ -26,6 +26,7 @@ export {
   updateEvent,
 } from './events';
 export { LIST_CALENDARS_TYPE, listCalendars } from './calendars';
+export { CALENDAR_NEW_EVENT_TYPE, newEvent, type CalendarNewEvent } from './new-event.polling';
 
 import { listCalendars } from './calendars';
 import { createEvent, deleteEvent, getEvent, listEvents, updateEvent } from './events';

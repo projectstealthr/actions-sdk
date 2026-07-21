@@ -1,9 +1,11 @@
 import type { AuthScheme, DirectCredential } from '../auth';
 import { ActionError } from '../errors';
+import { encodeForm } from './form';
 import { encodeMultipart } from './multipart';
 import {
   appendQuery,
   type FetchLike,
+  isFormBody,
   isMultipartBody,
   type NormalizedRequest,
   type NormalizedResponse,
@@ -63,9 +65,10 @@ export class DirectTransport implements Transport {
 
   /**
    * Serialise the request body for the wire and set its Content-Type. A
-   * multipart body is encoded to raw bytes with a boundary header (mutating the
-   * already-copied `prepared.headers`); a JSON body is stringified; absent → no
-   * body.
+   * multipart body is encoded to raw bytes with a boundary header; a form body is
+   * encoded to a `key=value&…` string with the url-encoded content-type; a JSON
+   * body is stringified (both special bodies mutate the already-copied
+   * `prepared.headers`); absent → no body.
    */
   private encodeBody(prepared: NormalizedRequest): string | Buffer | undefined {
     if (prepared.body === undefined) return undefined;
@@ -73,6 +76,10 @@ export class DirectTransport implements Transport {
       const { body, contentType } = encodeMultipart(prepared.body);
       prepared.headers['content-type'] = contentType;
       return body;
+    }
+    if (isFormBody(prepared.body)) {
+      prepared.headers['content-type'] = 'application/x-www-form-urlencoded';
+      return encodeForm(prepared.body);
     }
     return JSON.stringify(prepared.body);
   }

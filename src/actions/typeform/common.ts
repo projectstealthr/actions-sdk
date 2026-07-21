@@ -12,10 +12,16 @@ import type { DropdownOption } from '../../core/props';
 
 export const TYPEFORM_API_BASE = 'https://api.typeform.com';
 
-/** Typeform authenticates with a personal access token / OAuth token as a Bearer credential. */
+/**
+ * Typeform authenticates with a personal access token / OAuth token as a Bearer
+ * credential. `webhooks:write`/`webhooks:read` are required so the `new_response`
+ * trigger's `onEnable` (PUT /forms/{id}/webhooks/{tag}) can register on the OAuth
+ * rail — without them Typeform 403s the webhook create.
+ * Scopes: https://www.typeform.com/developers/get-started/scopes/
+ */
 export const typeformAuth: OAuth2Scheme = {
   type: 'oauth2',
-  scopes: ['forms:read', 'responses:read'],
+  scopes: ['forms:read', 'responses:read', 'webhooks:write', 'webhooks:read'],
 };
 
 /** A form as it appears in the forms list (trimmed to what reads + the picker use). */

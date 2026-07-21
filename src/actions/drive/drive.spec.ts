@@ -27,7 +27,11 @@ describe('drive.list_files', () => {
     );
     const out = await listFiles.execute({ auth, http, props: { limit: 100 } });
     expect(out.count).toBe(2);
-    expect(decodeURIComponent(transport.requests[0]!.url)).toContain('q=trashed=false');
+    const first = transport.requests[0]!.url;
+    expect(decodeURIComponent(first)).toContain('q=trashed=false');
+    // Shared-drive items are included, not just My Drive.
+    expect(first).toContain('supportsAllDrives=true');
+    expect(first).toContain('includeItemsFromAllDrives=true');
     expect(transport.requests[1]!.url).toContain('pageToken=NP');
   });
 
@@ -50,6 +54,8 @@ describe('drive.get_file', () => {
     expect(out.name).toBe('Doc');
     expect(transport.requests[0]!.url).toContain('/files/f1');
     expect(transport.requests[0]!.url).toContain('fields=');
+    // Resolve ids that live on a shared drive, not just My Drive.
+    expect(transport.requests[0]!.url).toContain('supportsAllDrives=true');
   });
 });
 
@@ -67,5 +73,7 @@ describe('drive.create_folder', () => {
       mimeType: 'application/vnd.google-apps.folder',
       parents: ['root1'],
     });
+    // Accept a shared-drive parent, not just a My Drive folder.
+    expect(transport.requests[0]!.url).toContain('supportsAllDrives=true');
   });
 });

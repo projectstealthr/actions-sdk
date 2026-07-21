@@ -106,6 +106,30 @@ import { binanceActions } from './binance';
 import { pdfActions } from './pdf';
 import { qrcodeActions } from './qrcode';
 import { newItem as rssNewItem } from './rss';
+// Registered-webhook triggers on the app catalog (aliased — `newIssue`/`newTask`/etc. collide across apps).
+import { newCustomer as stripeNewCustomer, paymentSucceeded as stripePaymentSucceeded } from './stripe';
+import { newResponse as typeformNewResponse } from './typeform';
+import { newInvitee as calendlyNewInvitee } from './calendly';
+import { newIssue as linearNewIssue } from './linear';
+import { newTask as clickupNewTask } from './clickup';
+// Polling triggers on the app catalog (aliased for the same reason).
+import { newSubscriber as mailchimpNewSubscriber } from './mailchimp';
+import { newIssue as jiraNewIssue } from './jira';
+import { newTask as asanaNewTask } from './asana';
+import { newTask as todoistNewTask } from './todoist';
+import { newContact as hubspotNewContact } from './hubspot';
+import { newConversation as intercomNewConversation } from './intercom';
+import { newTicket as zendeskNewTicket } from './zendesk';
+import { newRecord as salesforceNewRecord } from './salesforce';
+import { newRecord as airtableNewRecord } from './airtable';
+import { newPage as notionNewPage } from './notion';
+import { newFile as dropboxNewFile } from './dropbox';
+import { newFile as driveNewFile } from './drive';
+import { newRow as sheetsNewRow } from './sheets';
+import { newRecording as zoomNewRecording } from './zoom';
+import { newEvent as calendarNewEvent } from './calendar';
+import { newEmail as outlookNewEmail } from './outlook';
+import { newEmail as gmailNewEmail } from './gmail';
 
 /** Every reference trigger. */
 export const referenceTriggers = [newMessage, newChannel, newPush, newIssue, newPullRequest] as const;
@@ -139,10 +163,53 @@ export const utilityActions = [
  * drives one poll via `.runPoll({ auth, props, store })`; the SDK returns only
  * events unseen since the stored cursor (watermark + bounded dedup set).
  */
-export const pollingTriggers = [newChannel, httpNewItem, hackernewsNewStory, rssNewItem] as const;
+export const pollingTriggers = [
+  newChannel,
+  httpNewItem,
+  hackernewsNewStory,
+  rssNewItem,
+  mailchimpNewSubscriber,
+  jiraNewIssue,
+  asanaNewTask,
+  todoistNewTask,
+  hubspotNewContact,
+  intercomNewConversation,
+  zendeskNewTicket,
+  salesforceNewRecord,
+  airtableNewRecord,
+  notionNewPage,
+  dropboxNewFile,
+  driveNewFile,
+  sheetsNewRow,
+  zoomNewRecording,
+  calendarNewEvent,
+  outlookNewEmail,
+  gmailNewEmail,
+] as const;
+
+/**
+ * Every registered-webhook trigger on the app catalog — the `onEnable`/`verify`/
+ * `onDisable` rail. The clean-room reference webhook triggers ({@link referenceTriggers}
+ * minus the polling `newChannel`) plus the app triggers registered per-app.
+ */
+export const appWebhookTriggers = [
+  stripePaymentSucceeded,
+  stripeNewCustomer,
+  typeformNewResponse,
+  calendlyNewInvitee,
+  linearNewIssue,
+  clickupNewTask,
+] as const;
 
 /** Every trigger the SDK ships — webhook + polling — for a unified catalog build. */
-export const catalogTriggers = [newMessage, newPush, newIssue, newPullRequest, ...pollingTriggers];
+export const catalogTriggers = [
+  newMessage,
+  newPush,
+  newIssue,
+  newPullRequest,
+  ...appWebhookTriggers,
+  ...pollingTriggers,
+];
 
 /**
  * The full clean-room catalog — every app's actions, flattened for catalog

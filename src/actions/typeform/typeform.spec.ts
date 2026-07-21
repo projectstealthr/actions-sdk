@@ -1,6 +1,7 @@
 import { HttpClient } from '../../core/http/client';
 import type { NormalizedRequest, NormalizedResponse } from '../../core/http/types';
 import { FakeTransport, stubAuth } from '../../testing/fakes';
+import { typeformAuth } from './common';
 import { getForm, getFormFields, listFormsAction } from './forms';
 import { listResponses } from './responses';
 
@@ -15,6 +16,14 @@ function fake(handler: (req: NormalizedRequest, i: number) => NormalizedResponse
   const transport = new FakeTransport(handler);
   return { auth: stubAuth(transport, 'oauth2'), http: new HttpClient(), transport };
 }
+
+describe('typeform auth scopes', () => {
+  it('requests the webhook scopes so the new_response trigger can register on OAuth', () => {
+    expect(typeformAuth.scopes).toEqual(
+      expect.arrayContaining(['forms:read', 'responses:read', 'webhooks:write', 'webhooks:read']),
+    );
+  });
+});
 
 describe('typeform.list_forms', () => {
   it('follows page-number pagination to page_count and applies the search filter', async () => {

@@ -24,6 +24,7 @@ export {
   sendEmail,
 } from './messages';
 export { CREATE_DRAFT_TYPE, createDraft, type GmailDraft, LIST_LABELS_TYPE, listLabels } from './labels';
+export { GMAIL_NEW_EMAIL_TYPE, newEmail, type GmailNewEmailEvent } from './new-email.polling';
 
 import { createDraft, listLabels } from './labels';
 import { findEmail, getEmail, getProfile, listMessages, sendEmail } from './messages';

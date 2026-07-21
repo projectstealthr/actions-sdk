@@ -21,6 +21,7 @@ export {
 } from './issues';
 export { CREATE_COMMENT_TYPE, createComment, type LinearComment } from './comments';
 export { LIST_TEAMS_TYPE, listTeams } from './teams';
+export { NEW_ISSUE_TYPE, newIssue, type LinearIssueEvent } from './new-issue.webhook';
 
 import { createComment } from './comments';
 import { createIssue, getIssue, listIssues, updateIssue } from './issues';

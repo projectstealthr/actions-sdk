@@ -45,8 +45,27 @@ export interface MultipartBody {
   readonly parts: readonly MultipartPart[];
 }
 
-/** What an action may send as a request body: JSON (default) or multipart (files). */
-export type RequestBody = JsonValue | MultipartBody;
+/**
+ * Brand that marks a {@link FormBody}. A `Symbol` (like {@link MULTIPART}) so a
+ * plain JSON object can never masquerade as one — the transport's "encode as
+ * url-encoded form vs. serialise as JSON" decision must be forgery-proof.
+ */
+export const FORM = Symbol('orchestr.http.form');
+
+/**
+ * An `application/x-www-form-urlencoded` request body. Like {@link MultipartBody}
+ * it is DISTINCT from {@link JsonValue}: the direct transport encodes it to a
+ * `key=value&…` string; the managed proxy rejects it (JSON only). Carries the
+ * already-flattened `[key, value]` pairs (arrays expanded to `key[i]`) built by
+ * the `form` request option — action code never constructs it by hand.
+ */
+export interface FormBody {
+  readonly [FORM]: true;
+  readonly fields: readonly (readonly [string, string])[];
+}
+
+/** What an action may send as a request body: JSON (default), multipart (files), or form (url-encoded). */
+export type RequestBody = JsonValue | MultipartBody | FormBody;
 
 /** How the caller wants the response body decoded: parsed JSON (default) or raw bytes. */
 export type ResponseType = 'json' | 'binary';
@@ -54,6 +73,11 @@ export type ResponseType = 'json' | 'binary';
 /** Narrow a body to a {@link MultipartBody} — forgery-proof via the symbol brand. */
 export function isMultipartBody(body: RequestBody | undefined): body is MultipartBody {
   return typeof body === 'object' && body !== null && (body as MultipartBody)[MULTIPART] === true;
+}
+
+/** Narrow a body to a {@link FormBody} — forgery-proof via the symbol brand. */
+export function isFormBody(body: RequestBody | undefined): body is FormBody {
+  return typeof body === 'object' && body !== null && (body as FormBody)[FORM] === true;
 }
 
 /**
