@@ -64,7 +64,7 @@ export * as rss from './rss';
 
 import { newChannel, newMessage } from './slack';
 import { getFile, listChannels, sendChannelMessage, uploadFile } from './slack';
-import { listIssues, newPush } from './github';
+import { listIssues, newIssue, newPullRequest, newPush } from './github';
 import { jiraActions } from './jira';
 import { linearActions } from './linear';
 import { stripeActions } from './stripe';
@@ -108,7 +108,7 @@ import { qrcodeActions } from './qrcode';
 import { newItem as rssNewItem } from './rss';
 
 /** Every reference trigger. */
-export const referenceTriggers = [newMessage, newChannel, newPush] as const;
+export const referenceTriggers = [newMessage, newChannel, newPush, newIssue, newPullRequest] as const;
 
 /**
  * The native no-auth utility actions, grouped for discoverability. These need no
@@ -142,7 +142,7 @@ export const utilityActions = [
 export const pollingTriggers = [newChannel, httpNewItem, hackernewsNewStory, rssNewItem] as const;
 
 /** Every trigger the SDK ships — webhook + polling — for a unified catalog build. */
-export const catalogTriggers = [newMessage, newPush, ...pollingTriggers];
+export const catalogTriggers = [newMessage, newPush, newIssue, newPullRequest, ...pollingTriggers];
 
 /**
  * The full clean-room catalog — every app's actions, flattened for catalog
