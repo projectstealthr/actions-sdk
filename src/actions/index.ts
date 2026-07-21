@@ -105,9 +105,6 @@ import { pdfActions } from './pdf';
 import { qrcodeActions } from './qrcode';
 import { newItem as rssNewItem } from './rss';
 
-/** Every reference action, for catalog builds and registration. */
-export const referenceActions = [sendChannelMessage, listChannels, listIssues, getFile, uploadFile] as const;
-
 /** Every reference trigger. */
 export const referenceTriggers = [newMessage, newChannel, newPush] as const;
 
