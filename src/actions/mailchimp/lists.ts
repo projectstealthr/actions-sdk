@@ -8,7 +8,7 @@ import {
   serverPrefixProp,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const LIST_AUDIENCES_TYPE = 'mailchimp.list_audiences';
 export const GET_LIST_TYPE = 'mailchimp.get_list';
 export const LIST_CAMPAIGNS_TYPE = 'mailchimp.list_campaigns';

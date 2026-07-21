@@ -13,10 +13,11 @@ import {
 
 /**
  * Public types — aligned to the platform catalog ids where one exists so the
- * service dedup replaces the broken-on-managed AP row with ours and any plan
+ * service dedup replaces the broken-on-managed prior row with ours and any plan
  * referencing the established id routes to our working action. `create` / `get by
- * id` / `list` / `update` / `delete` all have an underscore AP id and reuse it;
- * only `list_calendars` is a clean new id (AP has no equivalent).
+ * id` / `list` / `update` / `delete` all have an underscore catalog id and reuse
+ * it; only `list_calendars` is a clean new id (the prior catalog has no
+ * equivalent).
  */
 export const CREATE_EVENT_TYPE = 'calendar.create_google_calendar_event';
 export const LIST_EVENTS_TYPE = 'calendar.google_calendar_get_events';

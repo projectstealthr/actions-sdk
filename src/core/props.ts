@@ -273,7 +273,7 @@ function invalidInput(field: string, message: string): ActionError {
 /**
  * Resolve a dropdown/multiSelect prop's options — static array or live loader —
  * to a uniform {@link DropdownResult}. A missing connection yields a disabled
- * result (not an error), centralising the guard every AP loader repeats by hand.
+ * result (not an error), centralising the guard each option loader would otherwise repeat by hand.
  */
 export async function resolveOptions<V>(
   propSchema: DropdownSchema<V, boolean> | MultiSelectSchema<V, boolean>,

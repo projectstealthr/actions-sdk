@@ -1,7 +1,7 @@
 import { defineAction } from '../../core/action';
 import { type HubspotOwner, hubspotAuth, listHubspotOwners } from './common';
 
-/** Public type — stable across the AP→ours upgrade. */
+/** Public type — a stable public catalog id. */
 export const LIST_OWNERS_TYPE = 'hubspot.list_owners';
 
 /**

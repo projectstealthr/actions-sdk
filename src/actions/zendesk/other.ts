@@ -3,7 +3,7 @@ import { paginate } from '../../core/http/pagination';
 import { number, shortText } from '../../core/props';
 import { subdomainProp, type ZendeskUser, zendeskAuth, zendeskBaseUrl, zendeskNextPage } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const SEARCH_TYPE = 'zendesk.search';
 export const LIST_USERS_TYPE = 'zendesk.list_users';
 

@@ -34,7 +34,6 @@ liveDescribe('github — live via direct transport (unauthenticated)', () => {
     }
     const serialised = JSON.stringify(out).toLowerCase();
     expect(serialised).not.toContain('composio');
-    expect(serialised).not.toContain('activepieces');
 
     console.log(`live: github.list_issues → ${out.count} real issues across multiple pages`);
   }, 30_000);

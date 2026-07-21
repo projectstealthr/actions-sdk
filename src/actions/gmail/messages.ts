@@ -13,10 +13,10 @@ import {
 } from './common';
 
 /**
- * Public types — stable across the AP→ours upgrade. Where the platform catalog
- * already carries an Activepieces id for the same capability, ours reuses that
+ * Public types — stable public catalog ids. Where the platform catalog
+ * already carries an id for the same capability, ours reuses that
  * exact id (`gmail.send_email`, `gmail.gmail_get_mail`, `gmail.gmail_search_mail`)
- * so the service dedup replaces the broken-on-managed AP row with ours and any
+ * so the service dedup replaces the broken-on-managed prior row with ours and any
  * plan referencing the established id routes to our working action.
  */
 export const GET_PROFILE_TYPE = 'gmail.get_profile';

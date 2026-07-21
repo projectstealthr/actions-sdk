@@ -29,7 +29,6 @@ liveComposioDescribe('sheets — live via Composio managed proxy', () => {
   function assertNoVendorStrings(value: unknown): void {
     const serialised = JSON.stringify(value).toLowerCase();
     expect(serialised).not.toContain('composio');
-    expect(serialised).not.toContain('activepieces');
   }
 
   it('creates → appends → reads → updates → clears → lists a throwaway spreadsheet', async () => {

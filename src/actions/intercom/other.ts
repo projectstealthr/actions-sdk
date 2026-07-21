@@ -10,7 +10,7 @@ import {
   listIntercomAdmins,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const LIST_CONVERSATIONS_TYPE = 'intercom.list_conversations';
 export const LIST_ADMINS_TYPE = 'intercom.list_admins';
 

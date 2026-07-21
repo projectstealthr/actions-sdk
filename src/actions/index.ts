@@ -109,9 +109,9 @@ import { newItem as rssNewItem } from './rss';
 export const referenceTriggers = [newMessage, newChannel, newPush] as const;
 
 /**
- * The ported no-auth utility actions, grouped for discoverability. These need no
+ * The native no-auth utility actions, grouped for discoverability. These need no
  * credential (`none` scheme), run in-process at zero marginal cost, and work
- * offline — the self-host core the AP-retirement plan carries over first.
+ * offline — the self-host core carries them first.
  */
 export const utilityActions = [
   ...httpActions,

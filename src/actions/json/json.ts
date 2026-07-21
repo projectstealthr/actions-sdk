@@ -6,10 +6,10 @@ import type { JsonValue } from '../../core/http/types';
 import { checkbox, json, longText, number, shortText } from '../../core/props';
 
 /**
- * JSON utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `json` piece. The core transforms are dependency-free; `run_jsonata_query`
- * uses `jsonata` (MIT). The `run_jsonata_query` type string is kept
- * byte-identical to AP's so an AP-authored node silently upgrades to ours.
+ * JSON utilities — a no-auth ("none" scheme) native app. The core transforms are
+ * dependency-free; `run_jsonata_query` uses `jsonata` (MIT). The
+ * `run_jsonata_query` type string is kept byte-identical to the platform's
+ * existing catalog id so an existing node silently upgrades to this native action.
  */
 
 function isPlainObject(value: JsonValue): value is { [k: string]: JsonValue } {

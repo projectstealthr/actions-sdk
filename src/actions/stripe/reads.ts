@@ -2,7 +2,7 @@ import { defineAction } from '../../core/action';
 import { dropdown, number, shortText } from '../../core/props';
 import { customerOptions, STRIPE_API_BASE, type StripeCustomer, type StripeList, stripeAuth } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const GET_CUSTOMER_TYPE = 'stripe.get_customer';
 export const LIST_CUSTOMERS_TYPE = 'stripe.list_customers';
 export const SEARCH_CUSTOMERS_TYPE = 'stripe.search_customers';

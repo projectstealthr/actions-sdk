@@ -4,10 +4,10 @@ import { number, shortText } from '../../core/props';
 import { DRIVE_FILE_FIELDS, DRIVE_FILES_URL, DRIVE_FOLDER_MIME, type DriveFile, driveAuth } from './common';
 
 /**
- * Public types — the AP catalog ids for these capabilities are hyphenated
+ * Public types — the prior catalog ids for these capabilities are hyphenated
  * (`drive.list-files`, `drive.get-file-or-folder-by-id`), which the action
  * namespace forbids, so ours take clean underscore ids. The service dedup
- * suppresses the broken-on-managed AP Drive rows regardless of exact id.
+ * suppresses the broken-on-managed prior Drive rows regardless of exact id.
  */
 export const LIST_FILES_TYPE = 'drive.list_files';
 export const GET_FILE_TYPE = 'drive.get_file';

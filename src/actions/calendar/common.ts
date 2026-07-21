@@ -10,8 +10,8 @@ import { dropdown, type DropdownOption, type DropdownSchema } from '../../core/p
  * event shape are Google's public contract, read as *spec* and re-expressed here.
  * Everything is JSON, so every action stays on the managed rail (no multipart).
  *
- * This app is in the SERVICE's MANAGED_BROKEN_APPS set: the Activepieces
- * Calendar piece runs on `googleapis`/`gaxios`, which the piece-runner's managed
+ * This app is in the SERVICE's MANAGED_BROKEN_APPS set: the prior managed
+ * Calendar provider runs on `googleapis`/`gaxios`, which the managed
  * transport can't patch (the sentinel token leaks and Google rejects the call),
  * with no Composio-execution fallback. Our clean-room actions ride the SDK's one
  * http client + Composio proxy, which attaches the real token server-side — so

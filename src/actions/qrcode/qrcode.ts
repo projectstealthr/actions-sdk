@@ -5,11 +5,11 @@ import { ActionError } from '../../core/errors';
 import { dropdown, type FileInput, longText, number } from '../../core/props';
 
 /**
- * QR Code utility — a no-auth ("none" scheme) app ported clean-room from the
- * Activepieces `qrcode` piece. Backed by `qrcode` (MIT). Behaviour mirrors the
- * AP `text_to_qrcode` action; the type string is kept byte-identical so an
- * AP-authored node silently upgrades to ours. The AP piece returns just the
- * file; we also surface the error-correction level as a config knob.
+ * QR Code utility — a no-auth ("none" scheme) native app. Backed by `qrcode`
+ * (MIT). The `text_to_qrcode` type string is kept byte-identical to the
+ * platform's existing catalog id so an existing node silently upgrades to this
+ * native action. Beyond returning the file, we also surface the error-correction
+ * level as a config knob.
  */
 
 type ErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';

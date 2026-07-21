@@ -4,9 +4,9 @@ import { fetchStories, type HackerNewsItem, type StoryList } from './common';
 
 /**
  * Polling trigger (`hackernews.new_story`) — fires when a new story enters the
- * chosen Hacker News list. Ported from the Activepieces `hackernews` trigger. On
- * each poll it fetches the head of the list and the SDK's `runPoll` dedupes by
- * story id, so only stories not seen before fire (the polling contract). No-auth.
+ * chosen Hacker News list. On each poll it fetches the head of the list and the
+ * SDK's `runPoll` dedupes by story id, so only stories not seen before fire (the
+ * polling contract). No-auth.
  */
 
 export const NEW_STORY_TYPE = 'hackernews.new_story';

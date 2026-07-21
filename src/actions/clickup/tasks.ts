@@ -12,12 +12,13 @@ import {
 } from './common';
 
 /**
- * Public types — `create_task` / `update_task` reuse the platform's existing AP
- * ids; `get_list_task` is AP's "Get Task" id, reused; `list_tasks` is a clean id
- * (AP's `list_workspace_tasks` is workspace-scoped, a different capability). Where
- * ours reuses an AP id, the service dedup replaces the AP row with our working,
- * live-picker version; the rest of AP's ClickUp actions stay as fallbacks (ClickUp
- * runs fine on AP's axios rail — it is NOT a managed-broken app).
+ * Public types — `create_task` / `update_task` reuse the platform's existing
+ * catalog ids; `get_list_task` is the prior "Get Task" id, reused; `list_tasks`
+ * is a clean id (the prior `list_workspace_tasks` is workspace-scoped, a different
+ * capability). Where ours reuses an existing id, the service dedup replaces the
+ * prior row with our working, live-picker version; the rest of the prior ClickUp
+ * actions stay as fallbacks (ClickUp runs fine on the standard managed transport
+ * — it is NOT a managed-broken app).
  */
 export const CREATE_TASK_TYPE = 'clickup.create_task';
 export const GET_TASK_TYPE = 'clickup.get_list_task';

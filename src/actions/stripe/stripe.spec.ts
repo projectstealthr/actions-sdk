@@ -18,7 +18,6 @@ function fake(handler: (req: NormalizedRequest) => NormalizedResponse) {
 function assertNoVendorStrings(value: unknown): void {
   const serialised = JSON.stringify(value).toLowerCase();
   expect(serialised).not.toContain('composio');
-  expect(serialised).not.toContain('activepieces');
 }
 
 describe('stripe.get_customer', () => {

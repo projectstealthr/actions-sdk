@@ -3,7 +3,7 @@ import { paginate } from '../../core/http/pagination';
 import { number } from '../../core/props';
 import { GRAPH_ME_BASE, odataNextLink, type OutlookMailFolder, outlookAuth } from './common';
 
-/** Public type — no clean-reusable AP equivalent → a clean new underscore id. */
+/** Public type — no clean-reusable prior equivalent → a clean new underscore id. */
 export const LIST_FOLDERS_TYPE = 'outlook.list_folders';
 
 /**

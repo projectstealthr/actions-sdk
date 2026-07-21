@@ -10,7 +10,7 @@ import {
   checkboxTypecast,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const CREATE_RECORD_TYPE = 'airtable.create_record';
 export const GET_RECORD_TYPE = 'airtable.get_record';
 export const LIST_RECORDS_TYPE = 'airtable.list_records';

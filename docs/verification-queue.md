@@ -338,7 +338,7 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   `list_contacts`, `search_contacts`, `create_deal`, `list_owners`. CRM v3, fixed
   base `api.hubapi.com`, JSON (writes work); `paging.next.after` cursor pagination.
 - **Ids (this batch):** `create_deal` is a **coined** id `hubspot.create_deal`
-  (AP's `hubspot.create-deal` is hyphenated → not a valid action namespace, so it
+  (the prior `hubspot.create-deal` is hyphenated → not a valid action namespace, so it
   ships alongside rather than replacing). The others kept their prior coined ids.
 - **`search_contacts` now paginates** via the CRM v3 search `paging.next.after`
   cursor (POST-body cursor, small hand-rolled loop) up to `limit`, returning
@@ -374,9 +374,9 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
   `list_labels`, `create_draft`. API v1, JSON — send/draft carry the RFC822
   message as a base64url `raw` string in a JSON body (no multipart, stays on the
   managed rail). `list_messages` + `gmail_search_mail` follow `nextPageToken`.
-- **Catalog-id alignment:** the send/get/find ids reuse the platform's existing AP
+- **Catalog-id alignment:** the send/get/find ids reuse the platform's existing
   catalog ids (`gmail.send_email`, `gmail.gmail_get_mail`, `gmail.gmail_search_mail`)
-  so the service dedup replaces the broken-on-managed AP rows with ours and any plan
+  so the service dedup replaces the broken-on-managed prior rows with ours and any plan
   referencing the established id routes to our working action.
 - **Auth:** OAuth2 Bearer. Fixed base `gmail.googleapis.com/gmail/v1/users/me`.
 - **Live picker (works today):** label picker (independent) on `list_messages`
@@ -394,10 +394,10 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 - **Actions:** `search`, `get_database`, `query_database`, `create_page`,
   `get_page`, `update_page`, `append_to_page` (append block children). Fixed base
   `api.notion.com/v1`, JSON; pins `Notion-Version: 2022-06-28`.
-- **Ids (this batch):** `append_to_page` **reuses** the AP catalog id
+- **Ids (this batch):** `append_to_page` **reuses** the existing catalog id
   `notion.append_to_page` (Notion's `PATCH /v1/blocks/{block_id}/children`; a page
-  IS a block) so the dedup replaces that AP row. The other six kept their prior
-  coined underscore ids (AP's are camelCase/`find_*`, not reusable).
+  IS a block) so the dedup replaces that prior row. The other six kept their prior
+  coined underscore ids (the prior ids are camelCase/`find_*`, not reusable).
 - **`query_database` now paginates** via Notion's `start_cursor` (POST-body
   cursor, small hand-rolled loop) up to `limit`, returning `{ pages, count }` —
   matching the paginating-read convention of the other list actions.
@@ -426,14 +426,14 @@ reported rather than changed here. **Pickers waiting on this fix are tagged
 
 ## Scope 2 (Google apps — the managed-broken class the SDK OWNS)
 
-The AP Google pieces run on `googleapis`/`gaxios`, which the piece-runner's
+The prior Google providers run on `googleapis`/`gaxios`, which the
 managed transport can't patch → the sentinel token leaks and Google rejects the
 call. There is no Composio-execution fallback for them either (they are not in
-`managed-app-rails.ts`'s `FALLBACK_ONLY_APPS`), so a surfaced AP Google action
-routes to the failing piece. Our clean-room actions ride the SDK's one http client
+`managed-app-rails.ts`'s `FALLBACK_ONLY_APPS`), so a surfaced prior Google action
+routes to the failing provider. Our clean-room actions ride the SDK's one http client
 + Composio proxy transport, which attaches the real token server-side — so managed
 Gmail/Sheets/Docs/Drive/Slides actually work. The service dedup is app-aware for
-these apps: OUR actions are offered and the un-reimplemented AP actions of the
+these apps: OUR actions are offered and the un-reimplemented prior actions of the
 same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
 
 ### sheets — LIVE-VERIFIED ✅ (6 actions, live spreadsheet picker)
@@ -441,8 +441,8 @@ same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
 - **Actions:** `create_spreadsheet`, `read_range`, `insert_row` (append),
   `update_row`, `clear_sheet`, `list_sheets`. API v4, JSON throughout;
   `insert_row`/`update_row` use `USER_ENTERED`. `insert_row`/`update_row` reuse the
-  AP catalog ids (`sheets.insert_row`, `sheets.update_row`); the rest take clean
-  ids (the AP equivalents are hyphenated, which the action namespace forbids).
+  existing catalog ids (`sheets.insert_row`, `sheets.update_row`); the rest take clean
+  ids (the prior equivalents are hyphenated, which the action namespace forbids).
 - **Auth:** OAuth2 Bearer. Base `sheets.googleapis.com/v4/spreadsheets`.
 - **Live picker (works today):** the `spreadsheetId` picker lists the user's
   spreadsheets via Drive `files.list` — independent of any other prop. The managed
@@ -460,7 +460,7 @@ same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
 
 - **Actions:** `create_document`, `read_document` (returns derived plain text),
   `append_text` (a single `insertText` at end-of-segment). API v1, JSON. Reuses the
-  AP catalog ids (`docs.create_document`, `docs.read_document`, `docs.append_text`).
+  existing catalog ids (`docs.create_document`, `docs.read_document`, `docs.append_text`).
 - **Auth:** OAuth2 Bearer. Base `docs.googleapis.com/v1/documents`.
 - **LIVE-VERIFIED 2026-07-08** via `ca_0gKJcMiZ6nEm` (create → append → read back
   "Hello Orchestr."). `src/actions/docs/docs.live.spec.ts`.
@@ -468,7 +468,7 @@ same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
 ### drive — LIVE-VERIFIED ✅ (3 actions, JSON-metadata only)
 
 - **Actions:** `list_files` (list/search via the raw `q` grammar, `nextPageToken`
-  pagination), `get_file` (metadata by id), `create_folder`. API v3, JSON. AP ids
+  pagination), `get_file` (metadata by id), `create_folder`. API v3, JSON. The prior ids
   are hyphenated → clean underscore ids.
 - **MANAGED-FILE LIMITATION (surfaced honestly):** the managed proxy carries JSON
   only (docs/FRAMEWORK-NOTES.md §B), so uploading/downloading file **content**
@@ -482,8 +482,8 @@ same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
 ### slides — LIVE-VERIFIED ✅ (2 actions)
 
 - **Actions:** `create_presentation`, `get_presentation` (id/title/slide-count
-  summary). API v1, JSON. `get_presentation` reuses the AP id; `create` is a clean
-  new id (AP has no create).
+  summary). API v1, JSON. `get_presentation` reuses the existing id; `create` is a clean
+  new id (the prior catalog has no create).
 - **Auth:** OAuth2 Bearer. Base `slides.googleapis.com/v1/presentations`.
 - **LIVE-VERIFIED 2026-07-08** via `ca_8UbwbOB4w9nD` (create → get, 1 slide).
   `src/actions/slides/slides.live.spec.ts`.
@@ -495,12 +495,12 @@ same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
   (PATCH partial-update), `delete_event` (204 → synthesised confirmation),
   `list_calendars`. API v3, JSON throughout; `create` defaults `end` to start +
   30 min like the UI; `get_events` sets `singleEvents=true&orderBy=startTime` and
-  follows `nextPageToken`. The first five reuse the platform's AP catalog ids;
-  `list_calendars` is a clean id (AP has no equivalent).
-- **Managed-broken class:** the AP Calendar piece runs on `googleapis`/`gaxios`
+  follows `nextPageToken`. The first five reuse the platform's existing catalog ids;
+  `list_calendars` is a clean id (the prior catalog has no equivalent).
+- **Managed-broken class:** the prior Calendar provider runs on `googleapis`/`gaxios`
   (the same defect as gmail/sheets/docs/drive/slides), so `calendar` is now in the
   service's `MANAGED_BROKEN_APPS` set — the dedup offers **only** our actions for
-  this app and suppresses the un-reimplemented AP calendar actions ("offered =
+  this app and suppresses the un-reimplemented prior calendar actions ("offered =
   works"). This **completes the owned Google suite.**
 - **Auth:** OAuth2 Bearer. Base `www.googleapis.com/calendar/v3`.
 - **Live picker (works today):** the `calendarId` picker lists the user's calendars
@@ -526,19 +526,19 @@ same app are suppressed ("offered = works"). All five LIVE-VERIFIED 2026-07-08.
 
 Standard JSON REST apps — they ride **both** rails (managed via Composio, or a BYO
 token) with byte-identical action code, so they are NOT in `MANAGED_BROKEN_APPS`
-(AP executes them fine on axios; our reused-id actions replace the AP row via the
-exact-type rule, and AP's other actions stay as fallbacks). All PENDING — no
+(the managed transport executes them fine on axios; our reused-id actions replace the prior row via the
+exact-type rule, and the prior catalog's other actions stay as fallbacks). All PENDING — no
 connection on the shared account yet.
 
 ### asana — PENDING (6 actions, live project + workspace pickers)
 
 - **Actions:** `create_task`, `get_task`, `update_task`, `list_tasks` (by project),
   `list_projects` (optionally by workspace), `add_comment`. API v1, JSON with the
-  `{ data: … }` request/response envelope; `create_task` reuses the AP id, the rest
-  are clean ids (AP ships only `create_task`). `list_tasks` + `list_projects` follow
+  `{ data: … }` request/response envelope; `create_task` reuses the existing id, the rest
+  are clean ids (the prior catalog carried only `create_task`). `list_tasks` + `list_projects` follow
   Asana's `next_page.offset` cursor.
 - **Ids (this batch):** `list_projects` is a **coined** id `asana.list_projects`
-  (AP ships no Asana list-projects action). Helpers renamed to the codebase's
+  (the prior catalog has no Asana list-projects action). Helpers renamed to the codebase's
   `list<App><Resource>` convention (`listAsanaProjects`/`listAsanaWorkspaces`) so
   the short verb `listProjects` names the action.
 - **Auth:** OAuth2 Bearer (managed) or a BYO personal access token attached the
@@ -559,10 +559,10 @@ connection on the shared account yet.
 
 ### clickup — PENDING (4 actions, live list picker via hierarchy walk)
 
-- **Actions:** `create_task`, `get_list_task` (get by id — AP's "Get Task" id,
+- **Actions:** `create_task`, `get_list_task` (get by id — the prior "Get Task" id,
   reused), `update_task`, `list_tasks` (by list, `page`/`last_page` cursor).
-  API v2, JSON; `create_task`/`update_task` reuse the AP ids, `get_list_task` reuses
-  AP's get-task id, `list_tasks` is a clean id (AP's `list_workspace_tasks` is
+  API v2, JSON; `create_task`/`update_task` reuse the existing ids, `get_list_task` reuses
+  the prior get-task id, `list_tasks` is a clean id (the prior `list_workspace_tasks` is
   workspace-scoped). Static priority picker (1–4).
 - **Auth:** personal token in a bare `Authorization` header (no `Bearer`); managed
   OAuth attaches server-side. Fixed base `api.clickup.com/api/v2`.
@@ -588,7 +588,7 @@ connection on the shared account yet.
 
 - **Actions:** `create_task`, `find_task` (get tasks by project/filter),
   `update_task`, `mark_task_completed` (close, 204 → synthesised confirmation).
-  REST v2, JSON, un-paginated list. **All four reuse the platform's AP ids** so the
+  REST v2, JSON, un-paginated list. **All four reuse the platform's existing catalog ids** so the
   dedup replaces those rows with our working, live-picker versions. Static priority
   picker maps UI p1–p4 onto Todoist's inverted 4→1 wire scale.
 - **Auth:** OAuth2 Bearer (managed) or a BYO token attached the same way. Fixed base
@@ -622,9 +622,9 @@ connection on the shared account yet.
 
 Four standard JSON apps (Dropbox v2 RPC, Typeform, Zoom v2, Microsoft Graph mail).
 All ride **both** rails with byte-identical action code, so **none is in
-`MANAGED_BROKEN_APPS`** (they are axios/fetch-based, not gaxios — AP executes the
+`MANAGED_BROKEN_APPS`** (they are axios/fetch-based, not gaxios — the managed transport executes the
 un-reimplemented actions fine, so those stay as fallbacks; only our reused-id
-actions replace the matching AP row via the exact-type rule). All **PENDING** —
+actions replace the matching prior row via the exact-type rule). All **PENDING** —
 the shared Composio account has connections for slack/slides/sheets/drive/gmail/
 github/docs only (checked the service `connections` table for owner
 m.huzefa1993), so there is **no** dropbox/typeform/zoom/outlook connection to run
@@ -643,8 +643,8 @@ limitation (surfaced honestly, like drive), not a new gap.
 - **Actions:** `list_dropbox_folder` (list a folder, continue-cursor paginated),
   `get_file_metadata`, `create_new_dropbox_folder`, `search_dropbox`,
   `get_dropbox_file_link` (temporary direct-download URL). API v2 JSON-RPC on
-  `api.dropboxapi.com`. The first four reuse AP's underscore ids (dedup replaces
-  those AP rows); `get_file_metadata` is a clean new id.
+  `api.dropboxapi.com`. The first four reuse the prior underscore ids (dedup replaces
+  those prior rows); `get_file_metadata` is a clean new id.
 - **FILE/BINARY LIMITATION (surfaced honestly, like drive):** Dropbox splits its
   API across `api.dropboxapi.com` (JSON RPC — what we cover) and
   `content.dropboxapi.com` (binary upload/download with a `Dropbox-API-Arg`
@@ -670,7 +670,7 @@ limitation (surfaced honestly, like drive), not a new gap.
 
 - **Actions:** `list_forms` (page-number paginated), `get_form`, `list_responses`
   (by form, `before`-token paginated), `get_form_fields`. Fixed base
-  `api.typeform.com`, JSON. AP ships only `custom_api_call` → all clean new ids.
+  `api.typeform.com`, JSON. The prior catalog carried only `custom_api_call` → all clean new ids.
 - **Auth:** OAuth2 / personal token as Bearer.
 - **Live picker (works today):** form picker (`/forms`) — independent, honours the
   loader `search` term; used by get_form / get_form_fields / list_responses.
@@ -692,7 +692,7 @@ limitation (surfaced honestly, like drive), not a new gap.
 - **Actions:** `zoom_create_meeting`, `list_meetings` (`next_page_token`
   cursor), `zoom_find_meeting` (get by id), `zoom_update_meeting` (PATCH, 204 →
   synthesised confirmation), `delete_meeting` (204 → synthesised). API v2, JSON.
-  create/find/update reuse AP's underscore ids (dedup replaces them);
+  create/find/update reuse the prior underscore ids (dedup replaces them);
   list/delete are clean new ids.
 - **Auth:** OAuth2 Bearer. Fixed base `api.zoom.us/v2`.
 - **Live picker (works today):** host picker (`/users`) — independent; used by
@@ -715,9 +715,9 @@ limitation (surfaced honestly, like drive), not a new gap.
 - **Actions:** `send_email` (Graph `sendMail`, 202 → synthesised confirmation),
   `list_messages` (all or folder-scoped; `@odata.nextLink` cursor; `$search` adds
   the `ConsistencyLevel: eventual` header), `get_message`, `list_folders`
-  (`@odata.nextLink` cursor). Base `graph.microsoft.com/v1.0/me`, JSON. AP's
+  (`@odata.nextLink` cursor). Base `graph.microsoft.com/v1.0/me`, JSON. The prior
   Outlook ids are hyphenated (`send-email`) or camelCase (`findEmail`) → all clean
-  new ids (Outlook is NOT managed-broken, so AP's actions stay as fallbacks).
+  new ids (Outlook is NOT managed-broken, so the prior actions stay as fallbacks).
 - **AUTH-SHAPE ASSUMPTION — verified by construction (batch ask):** Graph uses a
   standard `Authorization: Bearer <token>` over HTTPS — the same shape as every
   oauth2 app here. Our actions never set the header; on the managed rail the

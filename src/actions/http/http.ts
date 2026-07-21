@@ -5,11 +5,11 @@ import type { HttpMethod, JsonValue, QueryValue } from '../../core/http/types';
 import { checkbox, dropdown, json, shortText } from '../../core/props';
 
 /**
- * HTTP utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `http` piece. `http.send_request` is load-bearing (the IR generator emits it),
- * so its public type is kept byte-identical to AP's. Because the scheme is `none`
- * the request rides the direct transport with no credential attached — callers
- * bring their own auth via the `headers` prop, which is exactly the AP behaviour.
+ * HTTP utilities — a no-auth ("none" scheme) native app. `http.send_request` is
+ * load-bearing (the IR generator emits it), so its public type is kept
+ * byte-identical to the platform's existing catalog id. Because the scheme is
+ * `none` the request rides the direct transport with no credential attached —
+ * callers bring their own auth via the `headers` prop.
  */
 
 /** Coerce a JSON object into a string→string header map. */

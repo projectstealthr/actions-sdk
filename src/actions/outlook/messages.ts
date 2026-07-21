@@ -12,11 +12,11 @@ import {
 } from './common';
 
 /**
- * Public types — Outlook's AP catalog ids are hyphenated (`send-email`) or
+ * Public types — Outlook's prior catalog ids are hyphenated (`send-email`) or
  * camelCase (`findEmail`), which the action namespace forbids, so ours take clean
  * underscore ids. Outlook is NOT managed-broken (Graph rides the standard bearer
- * transport), so the un-reimplemented AP Outlook actions stay as fallbacks — our
- * actions add the working, transport-agnostic core alongside them.
+ * transport), so the un-reimplemented prior Outlook actions stay as fallbacks —
+ * our actions add the working, transport-agnostic core alongside them.
  */
 export const SEND_EMAIL_TYPE = 'outlook.send_email';
 export const LIST_MESSAGES_TYPE = 'outlook.list_messages';

@@ -1,7 +1,7 @@
 import { defineAction } from '../../core/action';
 import { type AirtableBase, airtableAuth, listAirtableBases } from './common';
 
-/** Public type — stable across the AP→ours upgrade. */
+/** Public type — a stable public catalog id. */
 export const LIST_BASES_TYPE = 'airtable.list_bases';
 
 /**

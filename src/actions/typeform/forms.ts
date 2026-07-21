@@ -11,7 +11,7 @@ import {
   typeformAuth,
 } from './common';
 
-/** Public types — Typeform ships only `custom_api_call` in the AP catalog, so all clean new ids. */
+/** Public types — the prior catalog carried only `custom_api_call` for Typeform, so all clean new ids. */
 export const LIST_FORMS_TYPE = 'typeform.list_forms';
 export const GET_FORM_TYPE = 'typeform.get_form';
 export const GET_FORM_FIELDS_TYPE = 'typeform.get_form_fields';

@@ -126,7 +126,7 @@ export {
   type WebhookTriggerDefinition,
 } from './core/trigger';
 
-// Catalog serialisation (the AP-compatible manifest shape).
+// Catalog serialisation (the platform manifest shape).
 export {
   type ManifestEntry,
   type ManifestProp,

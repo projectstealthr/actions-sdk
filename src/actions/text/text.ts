@@ -8,14 +8,14 @@ import type { JsonValue } from '../../core/http/types';
 import { checkbox, dropdown, json, longText, number, shortText } from '../../core/props';
 
 /**
- * Text utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `text-helper` piece. The core string transforms are dependency-free; the
- * HTML/Markdown trio added here uses small permissive libraries (`showdown` MIT,
- * `turndown` MIT, `node-html-parser` MIT). `text.concat` is load-bearing: the IR
- * generator emits it, so its public type is kept byte-identical to AP's for the
- * silent upgrade. AP types that the SDK namespace forbids (`stripHtml`,
- * `defaultValue`) are re-spelled snake_case; `markdown_to_html`,
- * `html_to_markdown` and `extract_from_html` already match snake_case.
+ * Text utilities — a no-auth ("none" scheme) native app. The core string
+ * transforms are dependency-free; the HTML/Markdown trio added here uses small
+ * permissive libraries (`showdown` MIT, `turndown` MIT, `node-html-parser` MIT).
+ * `text.concat` is load-bearing: the IR generator emits it, so its public type is
+ * kept byte-identical to the platform's existing catalog id for the silent
+ * upgrade. Type names that the SDK namespace forbids (`stripHtml`, `defaultValue`)
+ * are re-spelled snake_case; `markdown_to_html`, `html_to_markdown` and
+ * `extract_from_html` already match snake_case.
  */
 
 type MarkdownFlavor = 'github' | 'original' | 'vanilla';
@@ -47,8 +47,8 @@ export const concat = defineAction({
     texts: json({ label: 'Texts', description: 'A JSON array of values to join.', required: true }),
     separator: shortText({ label: 'Separator', required: false, defaultValue: '' }),
   },
-  // Returns the joined string DIRECTLY (not `{ result }`) — AP's `text-helper`
-  // concat returns a bare string, and the IR generator + existing workflows
+  // Returns the joined string DIRECTLY (not `{ result }`) — the platform's
+  // `concat` returns a bare string, and the IR generator + existing workflows
   // consume that shape. Wrapping it would silently break the upgrade.
   run: ({ props }): Promise<string> => {
     if (!Array.isArray(props.texts)) {

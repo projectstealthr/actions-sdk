@@ -9,7 +9,7 @@ import {
   subscriberHash,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const ADD_MEMBER_TYPE = 'mailchimp.add_member';
 export const GET_MEMBER_TYPE = 'mailchimp.get_member';
 export const UPDATE_MEMBER_TYPE = 'mailchimp.update_member';

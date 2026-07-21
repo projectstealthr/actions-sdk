@@ -12,10 +12,10 @@ import {
 
 /**
  * Public types — aligned to the platform catalog ids where one exists so the
- * service dedup replaces the AP row with ours and any plan referencing the
- * established id routes to our action. AP's `list_dropbox_folder`,
+ * service dedup replaces the prior row with ours and any plan referencing the
+ * established id routes to our action. The prior `list_dropbox_folder`,
  * `create_new_dropbox_folder`, `search_dropbox`, and `get_dropbox_file_link`
- * are already underscore ids → reused verbatim. `get_metadata` has no AP
+ * ids are already underscore ids → reused verbatim. `get_metadata` has no prior
  * equivalent → a clean new underscore id.
  */
 export const LIST_FOLDER_TYPE = 'dropbox.list_dropbox_folder';

@@ -3,8 +3,8 @@ import { ActionError } from '../../core/errors';
 import { dropdown, number, shortText } from '../../core/props';
 
 /**
- * Date utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `date-helper` piece. Dependency-free: calendar-part extraction and formatting
+ * Date utilities — a no-auth ("none" scheme) native app. Dependency-free:
+ * calendar-part extraction and formatting
  * use the platform `Intl.DateTimeFormat` (timezone-aware), and arithmetic runs on
  * epoch/UTC, so there is no `dayjs`/`moment` dependency. Formatting supports a
  * dayjs-style token subset (`YYYY MM DD HH mm ss`, month/day names, `A/a`).

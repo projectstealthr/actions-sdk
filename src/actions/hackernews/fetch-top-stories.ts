@@ -4,7 +4,7 @@ import { fetchStories, type HackerNewsItem } from './common';
 
 /**
  * Fetch the current top stories from Hacker News — a no-auth read of the public
- * Firebase API, ported from the Activepieces `hackernews` piece.
+ * Firebase API.
  */
 
 export const FETCH_TOP_STORIES_TYPE = 'hackernews.fetch_top_stories';

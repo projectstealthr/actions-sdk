@@ -3,11 +3,10 @@ import type { AnyPropSchema, DropdownOption, PropsSchema } from './props';
 
 /**
  * Serialisation to the platform's existing catalog shape (design §6). The client
- * inspector renders props by an UPPERCASE `type` (the same tags Activepieces
- * emits — SHORT_TEXT, DROPDOWN, …); mapping our schemas onto those tags means an
- * app "silently upgrades" from an AP-backed action to ours with no client
- * change. Dynamic dropdowns emit no static `options` — they're resolved at
- * runtime via the action's option loader.
+ * inspector renders props by an UPPERCASE `type` (SHORT_TEXT, DROPDOWN, …);
+ * mapping our schemas onto those tags means an action "silently upgrades" into
+ * the platform catalog with no client change. Dynamic dropdowns emit no static
+ * `options` — they're resolved at runtime via the action's option loader.
  */
 
 export type ManifestPropType =
@@ -34,7 +33,7 @@ export interface ManifestProp {
 }
 
 export interface ManifestEntry {
-  /** Public `<slug>.<action>` namespace — stable across the AP→ours upgrade. */
+  /** Public `<slug>.<action>` namespace — a stable public catalog id. */
   type: string;
   displayName: string;
   description: string;

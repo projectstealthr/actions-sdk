@@ -19,7 +19,7 @@ const noAuth = stubAuth(new FakeTransport(() => ({ status: 200, headers: {}, dat
 
 describe('text actions', () => {
   it('concatenates values with a separator', async () => {
-    // Returns the joined string directly (AP `text-helper` concat shape) — not `{ result }`.
+    // Returns the joined string directly (the platform's `concat` shape) — not `{ result }`.
     expect(await concat.execute({ auth: noAuth, props: { texts: ['a', 'b', 'c'], separator: '-' } })).toBe(
       'a-b-c',
     );

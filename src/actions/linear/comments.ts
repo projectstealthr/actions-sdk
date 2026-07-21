@@ -2,7 +2,7 @@ import { defineAction } from '../../core/action';
 import { longText, shortText } from '../../core/props';
 import { linearAuth, linearGraphql } from './common';
 
-/** Public type — stable across the AP→ours upgrade. */
+/** Public type — a stable public catalog id. */
 export const CREATE_COMMENT_TYPE = 'linear.create_comment';
 
 /** A Linear comment, trimmed to the fields workflows read. */

@@ -7,15 +7,13 @@ import { file, type FileInput, json, longText, shortText } from '../../core/prop
 import { getTargetPages, mapVisualToIntrinsic, normalizedRotation, toBytes } from './common';
 
 /**
- * PDF utilities — a no-auth ("none" scheme) app ported clean-room from the
- * Activepieces `pdf` piece. Generation/merge/page-ops are backed by `pdf-lib`
- * (MIT); text extraction by `unpdf` (MIT, a maintained pdf.js build). Behaviour
- * mirrors the AP piece; the expression is ours. AP's camelCase action names
- * (`extractText`, `textToPdf`, …) are re-spelled snake_case for the SDK
- * namespace, which forbids uppercase.
+ * PDF utilities — a no-auth ("none" scheme) native app. Generation/merge/page-ops
+ * are backed by `pdf-lib` (MIT); text extraction by `unpdf` (MIT, a maintained
+ * pdf.js build). Action names are snake_case for the SDK namespace (which forbids
+ * uppercase), so camelCase forms (`extractText`, `textToPdf`, …) are re-spelled.
  *
- * Deferred: `convert_to_image` (PDF → raster). The AP piece shells out to the
- * poppler `pdftoppm` system binary (GPL-2.0) and there is no lightweight,
+ * Deferred: `convert_to_image` (PDF → raster). Rasterising a PDF needs the poppler
+ * `pdftoppm` system binary (GPL-2.0) and there is no lightweight,
  * permissively-licensed pure-JS PDF rasteriser — so it is out of scope for the
  * permissive-only dependency budget.
  */

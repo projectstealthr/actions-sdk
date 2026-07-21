@@ -5,14 +5,13 @@ import { ActionError } from '../../core/errors';
 import { number } from '../../core/props';
 
 /**
- * Math utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `math-helper` piece. Pure functions: they compute from their props and never
- * touch `http`/`auth`, so they run offline at zero marginal cost — the heart of
- * the self-host edition. Public types keep AP's `<op>_math` names where they are
- * already SDK-namespace-valid (`addition_math`, …) so a workflow authored against
- * the AP piece upgrades onto ours by exact type; `generateRandom_math` is
- * re-spelled `generate_random_math` (the SDK namespace forbids the camel-case
- * form).
+ * Math utilities — a no-auth ("none" scheme) native app. Pure functions: they
+ * compute from their props and never touch `http`/`auth`, so they run offline at
+ * zero marginal cost — the heart of the self-host edition. Public types use the
+ * `<op>_math` names where they are already SDK-namespace-valid (`addition_math`,
+ * …) so an existing node upgrades onto this native action by exact type;
+ * `generateRandom_math` is re-spelled `generate_random_math` (the SDK namespace
+ * forbids the camel-case form).
  */
 
 /** The single-value result every arithmetic op returns. */

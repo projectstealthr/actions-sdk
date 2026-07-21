@@ -3,7 +3,7 @@ import { defineAction } from '../../core/action';
 import { linkHeader, paginate } from '../../core/http/pagination';
 import { dropdown, number, shortText } from '../../core/props';
 
-/** Public type — stable across the AP→ours upgrade. */
+/** Public type — a stable public catalog id. */
 export const LIST_ISSUES_TYPE = 'github.list_issues';
 
 /**

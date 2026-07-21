@@ -4,7 +4,7 @@ import type { JsonValue } from '../../core/http/types';
 import { dropdown, json, number, shortText } from '../../core/props';
 import { HUBSPOT_API_BASE, type HubspotObject, hubspotAuth, ownerOptions } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const CREATE_CONTACT_TYPE = 'hubspot.create_contact';
 export const GET_CONTACT_TYPE = 'hubspot.get_contact';
 export const UPDATE_CONTACT_TYPE = 'hubspot.update_contact';

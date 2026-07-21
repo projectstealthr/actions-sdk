@@ -13,9 +13,9 @@ import {
 } from './common';
 
 /**
- * Public types — `create_task` reuses the platform's existing AP id so the
+ * Public types — `create_task` reuses the platform's existing catalog id so the
  * service dedup replaces that row with ours; the rest are clean underscore ids
- * (AP ships only `create_task` + `custom_api_call` for Asana).
+ * (the prior catalog carried only `create_task` + `custom_api_call` for Asana).
  */
 export const CREATE_TASK_TYPE = 'asana.create_task';
 export const GET_TASK_TYPE = 'asana.get_task';

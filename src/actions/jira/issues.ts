@@ -4,7 +4,7 @@ import type { JsonValue } from '../../core/http/types';
 import { dropdown, json, longText, number, shortText } from '../../core/props';
 import { instanceUrlProp, jiraAuth, namedRef, projectRef, resolveJiraBase, textToAdf } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const CREATE_ISSUE_TYPE = 'jira.create_issue';
 export const GET_ISSUE_TYPE = 'jira.get_issue';
 export const UPDATE_ISSUE_TYPE = 'jira.update_issue';

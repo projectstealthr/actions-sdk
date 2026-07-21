@@ -4,8 +4,8 @@ import { json, shortText } from '../../core/props';
 import { NOTION_API_BASE, NOTION_HEADERS, notionAuth } from './common';
 
 /**
- * Reuses the platform's existing AP id `notion.append_to_page` so the service
- * dedup replaces that AP row with ours. Notion appends block children to ANY
+ * Reuses the platform's existing catalog id `notion.append_to_page` so the service
+ * dedup replaces that prior row with ours. Notion appends block children to ANY
  * block via `PATCH /v1/blocks/{block_id}/children`; a page IS a block, so the one
  * verb covers "append to a page" and "append to a block".
  */

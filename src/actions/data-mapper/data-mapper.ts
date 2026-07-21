@@ -4,12 +4,11 @@ import type { JsonValue } from '../../core/http/types';
 import { json } from '../../core/props';
 
 /**
- * Data-mapper — a no-auth ("none" scheme) app ported from the Activepieces
- * `data-mapper` piece. "Advanced mapping" builds an output object from a mapping
- * spec: the workflow engine resolves any field interpolation BEFORE the action
- * runs, so at execution time the action simply returns the fully-resolved object
- * as its output (mirroring the AP piece). AP's hyphenated app slug becomes
- * `data_mapper` for the SDK namespace.
+ * Data-mapper — a no-auth ("none" scheme) native app. "Advanced mapping" builds
+ * an output object from a mapping spec: the workflow engine resolves any field
+ * interpolation BEFORE the action runs, so at execution time the action simply
+ * returns the fully-resolved object as its output. The app slug is `data_mapper`
+ * for the SDK namespace.
  */
 
 export const ADVANCED_MAPPING_TYPE = 'data_mapper.advanced_mapping';

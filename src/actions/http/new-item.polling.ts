@@ -9,7 +9,7 @@ import { shortText } from '../../core/props';
  * stable key so only items not seen in a prior poll fire. No-auth: callers pass
  * their own headers on the connection; the direct transport attaches nothing.
  *
- * Cursor semantics mirror the Activepieces TIMEBASED polling framework and the
+ * Cursor semantics mirror the SDK's time-based polling framework and the
  * `pollViaComposio` reference (workflow-service `composio-trigger.registry.ts`):
  * the trigger returns *candidates*, the framework advances the `lastPolledAt`
  * watermark and keeps a bounded `seen` set of dedupe keys — new events only.

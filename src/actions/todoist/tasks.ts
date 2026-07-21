@@ -13,7 +13,7 @@ import {
 } from './common';
 
 /**
- * Public types — all four reuse the platform's existing AP ids so the service
+ * Public types — all four reuse the platform's existing catalog ids so the service
  * dedup replaces those rows with our working, live-picker versions: `create_task`
  * / `update_task` directly, `find_task` for the list/get-tasks capability, and
  * `mark_task_completed` for close.

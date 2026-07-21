@@ -6,10 +6,10 @@ import { userIdProp, ZOOM_API_BASE, type ZoomMeeting, type ZoomMeetingListEntry,
 
 /**
  * Public types — aligned to the platform catalog ids where one exists so the
- * service dedup replaces the AP row with ours. `zoom_create_meeting`,
+ * service dedup replaces the prior row with ours. `zoom_create_meeting`,
  * `zoom_find_meeting` (get by id), and `zoom_update_meeting` are already
- * underscore AP ids → reused verbatim. `list_meetings` / `delete_meeting` have no
- * AP equivalent → clean new underscore ids.
+ * underscore catalog ids → reused verbatim. `list_meetings` / `delete_meeting`
+ * have no prior equivalent → clean new underscore ids.
  */
 export const CREATE_MEETING_TYPE = 'zoom.zoom_create_meeting';
 export const LIST_MEETINGS_TYPE = 'zoom.list_meetings';

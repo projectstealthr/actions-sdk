@@ -4,7 +4,7 @@ import type { JsonValue } from '../../core/http/types';
 import { dropdown, longText, number, shortText } from '../../core/props';
 import { subdomainProp, type ZendeskTicket, zendeskAuth, zendeskBaseUrl, zendeskNextPage } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const CREATE_TICKET_TYPE = 'zendesk.create_ticket';
 export const GET_TICKET_TYPE = 'zendesk.get_ticket';
 export const UPDATE_TICKET_TYPE = 'zendesk.update_ticket';

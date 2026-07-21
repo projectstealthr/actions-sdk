@@ -3,7 +3,7 @@ import type { JsonValue } from '../../core/http/types';
 import { checkbox, dropdown, number, shortText } from '../../core/props';
 import { instanceUrlProp, jiraAuth, resolveJiraBase, textToAdf } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const ADD_COMMENT_TYPE = 'jira.add_comment';
 export const LIST_COMMENTS_TYPE = 'jira.list_comments';
 

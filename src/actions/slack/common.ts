@@ -4,7 +4,7 @@ import { ActionError } from '../../core/errors';
 /**
  * Shared Slack building blocks. Clean-room: the endpoints, scopes, and the
  * `ok`/`error` envelope convention are Slack's public API contract (read from
- * Slack's docs and the vendored piece as *spec*), re-expressed as our own code.
+ * Slack's docs as *spec*), re-expressed as our own code.
  */
 
 export const SLACK_API_BASE = 'https://slack.com/api';

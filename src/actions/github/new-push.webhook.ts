@@ -52,7 +52,7 @@ interface GithubHook {
  * HMAC before the payload is trusted; `onDisable` deletes the hook by that id.
  *
  * This is the live proof of the `onEnable`/`onDisable` half of the trigger
- * contract (FRAMEWORK-NOTES Open A) — the piece Slack's app-level Events
+ * contract (FRAMEWORK-NOTES Open A) — the part Slack's app-level Events
  * subscription structurally cannot show.
  */
 export const newPush = defineTrigger({

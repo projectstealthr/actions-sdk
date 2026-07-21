@@ -3,10 +3,9 @@ import type { JsonValue } from '../../core/http/types';
 import { json, longText, shortText } from '../../core/props';
 
 /**
- * GraphQL utility — a no-auth ("none" scheme) app ported from the Activepieces
- * `graphql` piece. Posts a query (+ variables) to any GraphQL endpoint and
- * returns the `data`/`errors` envelope. Auth, when needed, rides the `headers`
- * prop (e.g. an Authorization bearer), exactly like the AP piece.
+ * GraphQL utility — a no-auth ("none" scheme) native app. Posts a query (+
+ * variables) to any GraphQL endpoint and returns the `data`/`errors` envelope.
+ * Auth, when needed, rides the `headers` prop (e.g. an Authorization bearer).
  */
 
 function toHeaderRecord(value: JsonValue | undefined): Record<string, string> {

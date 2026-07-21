@@ -4,9 +4,9 @@ import { dropdown, json, shortText } from '../../core/props';
 import { HUBSPOT_API_BASE, type HubspotObject, hubspotAuth, ownerOptions, pipelineOptions } from './common';
 
 /**
- * Coined clean id — AP's `hubspot.create-deal` is hyphenated (invalid action
+ * Coined clean id — the prior `hubspot.create-deal` is hyphenated (invalid action
  * namespace), so it can't be reused; this new underscore id ships alongside the
- * AP row rather than replacing it.
+ * prior row rather than replacing it.
  */
 export const CREATE_DEAL_TYPE = 'hubspot.create_deal';
 

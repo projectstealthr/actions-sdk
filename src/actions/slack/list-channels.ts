@@ -5,7 +5,7 @@ import { cursorInBody, paginate } from '../../core/http/pagination';
 import { dropdown, number } from '../../core/props';
 import { assertSlackOk, SLACK_API_BASE, slackOAuth, type SlackEnvelope } from './common';
 
-/** Public type — stable across the AP→ours upgrade. */
+/** Public type — a stable public catalog id. */
 export const LIST_CHANNELS_TYPE = 'slack.list_channels';
 
 /** A Slack conversation (channel), trimmed to the fields config and workflows use. */

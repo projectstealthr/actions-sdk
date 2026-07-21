@@ -5,9 +5,9 @@ import { rangeProp, sheetsAuth, spreadsheetIdProp, toRows, valuesUrl } from './c
 
 /**
  * Public types — aligned to the platform catalog ids where one exists so the
- * service dedup replaces the broken-on-managed AP row with ours. `sheets.insert_row`
- * (Add Row) and `sheets.update_row` (Update Row) reuse the established AP ids;
- * `read_range` / `clear_sheet` have no underscore AP id (the AP ones are
+ * service dedup replaces the broken-on-managed prior row with ours. `sheets.insert_row`
+ * (Add Row) and `sheets.update_row` (Update Row) reuse the established catalog ids;
+ * `read_range` / `clear_sheet` have no underscore catalog id (the prior ones are
  * hyphenated, which the action namespace forbids), so they take a clean id.
  */
 export const READ_RANGE_TYPE = 'sheets.read_range';

@@ -2,7 +2,7 @@ import { defineAction } from '../../core/action';
 import { shortText } from '../../core/props';
 import { listSheetTabs, SHEETS_API_BASE, type SheetTab, sheetsAuth, spreadsheetIdProp } from './common';
 
-/** Public types — no underscore AP id exists (AP's are hyphenated), so clean ids. */
+/** Public types — no underscore catalog id exists (the prior ones are hyphenated), so clean ids. */
 export const LIST_SHEETS_TYPE = 'sheets.list_sheets';
 export const CREATE_SPREADSHEET_TYPE = 'sheets.create_spreadsheet';
 

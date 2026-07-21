@@ -10,7 +10,7 @@ import {
   type SalesforceWriteResult,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const RUN_QUERY_TYPE = 'salesforce.run_query';
 export const SEARCH_TYPE = 'salesforce.search';
 export const CREATE_RECORD_TYPE = 'salesforce.create_record';

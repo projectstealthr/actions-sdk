@@ -5,10 +5,9 @@ import { ActionError } from '../../core/errors';
 import { checkbox, dropdown, longText, number, shortText } from '../../core/props';
 
 /**
- * Crypto utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `crypto` piece. Backed entirely by Node's built-in `node:crypto`, so it stays
- * dependency-free and runs offline. AP's hyphenated types (`hash-text`,
- * `hmac-signature`, …) are re-spelled snake_case for the SDK namespace.
+ * Crypto utilities — a no-auth ("none" scheme) native app. Backed entirely by
+ * Node's built-in `node:crypto`, so it stays dependency-free and runs offline.
+ * Type names are snake_case for the SDK namespace (which forbids hyphens).
  *
  * Deferred on licensing grounds: `openpgp_encrypt`. The canonical implementation
  * (openpgp.js, all versions) is LGPL-3.0 — copyleft, outside the permissive

@@ -11,7 +11,7 @@ import {
   scheduledEventOptions,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const GET_CURRENT_USER_TYPE = 'calendly.get_current_user';
 export const LIST_EVENT_TYPES_TYPE = 'calendly.list_event_types';
 export const LIST_SCHEDULED_EVENTS_TYPE = 'calendly.list_scheduled_events';

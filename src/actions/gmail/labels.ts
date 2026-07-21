@@ -2,7 +2,7 @@ import { defineAction } from '../../core/action';
 import { buildRawMessage, GMAIL_API_BASE, type GmailLabel, gmailAuth, listGmailLabels } from './common';
 import { longText, shortText } from '../../core/props';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const LIST_LABELS_TYPE = 'gmail.list_labels';
 export const CREATE_DRAFT_TYPE = 'gmail.create_draft';
 

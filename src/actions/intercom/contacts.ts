@@ -11,7 +11,7 @@ import {
   intercomAuth,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const LIST_CONTACTS_TYPE = 'intercom.list_contacts';
 export const GET_CONTACT_TYPE = 'intercom.get_contact';
 export const CREATE_CONTACT_TYPE = 'intercom.create_contact';

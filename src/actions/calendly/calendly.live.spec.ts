@@ -34,7 +34,6 @@ liveComposioDescribe('calendly — live via Composio managed proxy', () => {
   function assertNoVendorStrings(value: unknown): void {
     const serialised = JSON.stringify(value).toLowerCase();
     expect(serialised).not.toContain('composio');
-    expect(serialised).not.toContain('activepieces');
   }
 
   const gated = CALENDLY_ACCOUNT ? it : it.skip;

@@ -59,9 +59,9 @@ A transport that ignores the abort signal could hang the client forever. The cli
 transport behaviour (tested with a transport that ignores the signal).
 
 ### 6. Centralised "not connected" guard for dynamic options
-Activepieces repeats `if (!auth) return { disabled, placeholder }` in **every** dropdown loader.
-The SDK centralises it in `resolveOptions`: loaders just return the options array; a missing
-connection yields a disabled result automatically. A small, real DX win over the reference.
+Hand-authored option loaders otherwise repeat `if (!auth) return { disabled, placeholder }` in
+**every** dropdown loader. The SDK centralises it in `resolveOptions`: loaders just return the
+options array; a missing connection yields a disabled result automatically. A small, real DX win.
 
 ### 7. Typed prop-value inference required a language-level fix
 `required: true` was being inferred as `boolean` (not the literal `true`), which collapsed

@@ -6,12 +6,10 @@ import type { JsonValue } from '../../core/http/types';
 import { checkbox, json, longText, shortText } from '../../core/props';
 
 /**
- * XML utilities — a no-auth ("none" scheme) app ported from the Activepieces
- * `xml` piece. The JSON→XML serialiser is dependency-free; `convert_xml_to_json`
- * uses `fast-xml-parser` (MIT) for a correct parse (CDATA, namespaces, entities,
- * comments). AP's hyphenated action names (`convert-json-to-xml`,
- * `convert-xml-to-json`) are re-spelled snake_case for the SDK namespace, which
- * forbids hyphens.
+ * XML utilities — a no-auth ("none" scheme) native app. The JSON→XML serialiser
+ * is dependency-free; `convert_xml_to_json` uses `fast-xml-parser` (MIT) for a
+ * correct parse (CDATA, namespaces, entities, comments). Action names are
+ * snake_case for the SDK namespace (which forbids hyphens).
  */
 
 function escapeXml(text: string): string {

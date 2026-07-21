@@ -3,7 +3,7 @@ import type { JsonValue } from '../../core/http/types';
 import { dropdown, json, shortText } from '../../core/props';
 import { databaseOptions, NOTION_API_BASE, NOTION_HEADERS, type NotionObject, notionAuth } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const CREATE_PAGE_TYPE = 'notion.create_page';
 export const GET_PAGE_TYPE = 'notion.get_page';
 export const UPDATE_PAGE_TYPE = 'notion.update_page';

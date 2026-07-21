@@ -9,7 +9,7 @@ import {
   typeformAuth,
 } from './common';
 
-/** Public type — no AP equivalent → a clean new underscore id. */
+/** Public type — no prior equivalent → a clean new underscore id. */
 export const LIST_RESPONSES_TYPE = 'typeform.list_responses';
 
 const RESPONSES_PAGE_SIZE = 100;

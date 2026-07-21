@@ -11,8 +11,8 @@ deliberately different-shaped actions before scaling the catalog.
 
 **Is:** a standalone package that defines an action/trigger contract and a small runtime
 (`http` client, prop schemas, auth seam) plus a growing catalog of clean-room actions. It is
-designed to plug into the platform's existing piece-runner seam so it **coexists with
-Activepieces** and takes over app-by-app (design §2, §6).
+designed to plug into the platform's existing action-provider seam and take over
+app-by-app (design §2, §6).
 
 **Is not:** the moat. It never touches versioning/branching, the orchestration runtime,
 AI-authored config, or the MCP surface. The action library is the *hands*; the moat is the
@@ -20,10 +20,10 @@ AI-authored config, or the MCP surface. The action library is the *hands*; the m
 
 ## Clean-room mandate
 
-Every action here is **our own code**. The vendored Activepieces pieces and Composio tool
+Every action here is **our own code**. Each provider's public API docs and the Composio tool
 schemas were read **only as spec** — which endpoint, which inputs, which output shape. Ideas and
-interfaces aren't copyrightable; the specific expression is ours (design §1). No Activepieces or
-Composio source was copied.
+interfaces aren't copyrightable; the specific expression is ours (design §1). No third-party
+source was copied.
 
 ## License
 
@@ -47,8 +47,8 @@ Four primitives, each doing one job (see `src/`):
 - **Prop schemas** — `shortText`, `longText`, `number`, `checkbox`, `dropdown` (static **and**
   async `options({ auth, http })` loaders — the config differentiator), `multiSelect`, `json`,
   `file`, `dateTime`. Fully typed: `props` inside `run` is inferred with no `any`. Serialise to
-  the platform's UPPERCASE catalog tags via `toManifestEntry` so an app "silently upgrades" from
-  an AP-backed action to ours (design §6).
+  the platform's UPPERCASE catalog tags via `toManifestEntry` so an action "silently upgrades"
+  into the platform catalog (design §6).
 - **The `http` client** — the real engineering. Auth injection via a pluggable transport,
   pagination helpers (cursor-in-body **and** Link-header), retry-with-backoff that respects
   `Retry-After` and idempotency, per-request timeouts, and **error normalisation**: every failure
@@ -102,10 +102,10 @@ Five deliberately different shapes (design §9), each live-tested against a real
 
 See `docs/FRAMEWORK-NOTES.md` for the hard cases these surfaced.
 
-## Ported no-auth utility apps (AP-retirement phase 1)
+## Native no-auth utility apps (phase 1)
 
-The first wave of the Activepieces retirement: the 12 highest-value / lowest-risk **no-auth
-utility apps**, re-implemented clean-room with **zero runtime dependencies** (Node built-ins only).
+The first wave of native utility apps: the 12 highest-value / lowest-risk **no-auth
+utility apps**, implemented clean-room with **zero runtime dependencies** (Node built-ins only).
 They need no credential (`none` scheme), run in-process at zero marginal cost, and work offline —
 the self-host core Composio structurally cannot serve. Exposed via `actions.utilityActions` (folded
 into `actions.catalogActions`).
@@ -123,11 +123,11 @@ into `actions.catalogActions`).
 and projected via `actions.pollingTriggers` (the polling counterpart of `catalogActions`; a consumer
 projects each with `.toManifest()` and drives one poll via `.runPoll({ auth, props, store })`). The
 framework returns only events unseen since the stored cursor (a `lastPolledAt` watermark + a bounded
-`seen` dedup set — the same TIMEBASED semantics as the AP polling framework and the
+`seen` dedup set — the same time-based semantics as the SDK polling framework and the
 `pollViaComposio` reroute). Reference polling triggers: `http.new_item`, `hackernews.new_story`,
 `rss.new_item` (plus the pre-existing `slack.new_channel`).
 
-## Heavy-lib utility apps (AP-retirement phase 2)
+## Heavy-lib utility apps (phase 2)
 
 The second wave ports the utilities that phase-1 deferred because they need a third-party library.
 Each dependency was vetted **permissive-only** (MIT / Apache-2.0 / BSD / ISC); nothing copyleft
@@ -149,7 +149,7 @@ dynamic `import()`, and the Jest suite runs under `--experimental-vm-modules` to
 - `crypto.openpgp_encrypt` — the canonical `openpgp.js` (all versions) is **LGPL-3.0**, outside the
   permissive allowlist; the only permissive pure-JS OpenPGP lib (kbpgp, BSD-3-Clause) is
   unmaintained. Revisit if the owner accepts LGPL for this leaf dep.
-- `pdf.convert_to_image` (PDF → raster) — the AP action shells out to the poppler `pdftoppm`
+- `pdf.convert_to_image` (PDF → raster) — rasterising a PDF needs the poppler `pdftoppm`
   system binary (**GPL-2.0**), and there is no lightweight permissive pure-JS PDF rasteriser.
 
 ## Testing
@@ -194,6 +194,6 @@ src/
 ## Status
 
 Framework de-risked on five shapes; all gates green (tsc, eslint, tests incl. live). Not yet
-wired into the platform's piece-runner (that `OrchestrActionsProvider` seam lives in
+wired into the platform's action-provider seam (that `OrchestrActionsProvider` seam lives in
 `workflow-service` — the moat side). See `docs/FRAMEWORK-NOTES.md` for the readiness assessment
 and what to settle before mass-producing actions.

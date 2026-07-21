@@ -11,7 +11,7 @@ import {
   notionAuth,
 } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const SEARCH_TYPE = 'notion.search';
 export const GET_DATABASE_TYPE = 'notion.get_database';
 export const QUERY_DATABASE_TYPE = 'notion.query_database';

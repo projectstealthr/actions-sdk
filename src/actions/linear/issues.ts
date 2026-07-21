@@ -2,7 +2,7 @@ import { defineAction } from '../../core/action';
 import { dropdown, longText, number, shortText } from '../../core/props';
 import { linearAuth, linearGraphql, PRIORITY_OPTIONS, teamOptions, userOptions } from './common';
 
-/** Public types — stable across the AP→ours upgrade. */
+/** Public types — stable public catalog ids. */
 export const CREATE_ISSUE_TYPE = 'linear.create_issue';
 export const UPDATE_ISSUE_TYPE = 'linear.update_issue';
 export const GET_ISSUE_TYPE = 'linear.get_issue';

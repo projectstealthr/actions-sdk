@@ -1,7 +1,7 @@
 import { defineAction } from '../../core/action';
 import { type LinearTeam, linearAuth, listLinearTeams } from './common';
 
-/** Public type — stable across the AP→ours upgrade. */
+/** Public type — a stable public catalog id. */
 export const LIST_TEAMS_TYPE = 'linear.list_teams';
 
 /**

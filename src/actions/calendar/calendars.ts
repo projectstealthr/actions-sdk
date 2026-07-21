@@ -1,7 +1,7 @@
 import { defineAction } from '../../core/action';
 import { type CalendarListEntry, calendarAuth, listCalendarList } from './common';
 
-/** Public type — no AP `list calendars` action exists, so a clean underscore id. */
+/** Public type — no prior `list calendars` action exists, so a clean underscore id. */
 export const LIST_CALENDARS_TYPE = 'calendar.list_calendars';
 
 /**

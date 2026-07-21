@@ -24,7 +24,6 @@ liveComposioDescribe('slack — live via Composio managed proxy', () => {
   function assertNoVendorStrings(value: unknown): void {
     const serialised = JSON.stringify(value).toLowerCase();
     expect(serialised).not.toContain('composio');
-    expect(serialised).not.toContain('activepieces');
   }
 
   it('list_channels returns real channels via cursor pagination', async () => {

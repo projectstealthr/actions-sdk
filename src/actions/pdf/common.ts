@@ -3,9 +3,7 @@ import type { PDFPage } from 'pdf-lib';
 import { ActionError } from '../../core/errors';
 
 /**
- * Shared helpers for the clean-room `pdf` app. Behaviour mirrors the Activepieces
- * `pdf` piece's `common.ts` (page targeting + rotation mapping); the expression
- * here is our own.
+ * Shared helpers for the native `pdf` app (page targeting + rotation mapping).
  */
 
 /** A file-ish value as it may arrive through a `json` array prop or a `file` prop. */
