@@ -44,6 +44,7 @@ export * as dropbox from './dropbox';
 export * as typeform from './typeform';
 export * as zoom from './zoom';
 export * as outlook from './outlook';
+export * as ai from './ai';
 // Ported no-auth utility apps.
 export * as http from './http';
 export * as text from './text';
@@ -88,6 +89,7 @@ import { dropboxActions } from './dropbox';
 import { typeformActions } from './typeform';
 import { zoomActions } from './zoom';
 import { outlookActions } from './outlook';
+import { aiActions } from './ai';
 // Ported utility apps: action arrays + polling triggers.
 import { httpActions, newItem as httpNewItem } from './http';
 import { textActions } from './text';
@@ -176,5 +178,6 @@ export const catalogActions = [
   ...typeformActions,
   ...zoomActions,
   ...outlookActions,
+  ...aiActions,
   ...utilityActions,
 ];
