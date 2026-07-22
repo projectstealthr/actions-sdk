@@ -76,7 +76,7 @@ export interface AgentModelRequest {
   messages: AgentConversationMessage[];
   tools: AgentToolSchema[];
   temperature?: number;
-  /** Upper bound on generated tokens. Anthropic requires it, so it defaults to 1024 there. */
+  /** Upper bound on generated tokens. Anthropic requires it, so it defaults to an agent-sized 4096 there. */
   maxTokens?: number;
 }
 

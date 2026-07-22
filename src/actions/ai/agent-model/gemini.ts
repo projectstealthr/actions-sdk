@@ -14,12 +14,16 @@ import type {
  * Gemini `:generateContent` function calling — the classic REST shape the LLM
  * `generate_text` action already targets (contents/parts + `?key=` auth). Tools
  * are `{ functionDeclarations:[…] }`; the model's calls come back as `functionCall`
- * parts (role `model`, no call id — Gemini matches by NAME); results go back as
- * `functionResponse` parts in a user turn, keyed by the tool's name. Verified
- * against the generateContent function-calling reference (ai.google.dev/api).
+ * parts (role `model`); results go back as `functionResponse` parts in a user turn.
+ * Gemini matches result→call by NAME, but its API also carries an OPTIONAL `id` on
+ * `functionCall`/`functionResponse` — the ONLY way to disambiguate two concurrent
+ * calls to the SAME function, whose names collide. So we preserve that `id` when the
+ * model sends one (threading it back on both the echoed `functionCall` and the
+ * `functionResponse`), and synthesize a stable `name_index` only when it is absent.
+ * Verified against the generateContent function-calling reference (ai.google.dev/api).
  */
 
-/** Gemini has no per-call id — synthesize a unique one; results still thread by name. */
+/** Gemini omits the per-call id on older responses — synthesize a stable one so the loop always has an id. */
 function synthesizeId(name: string, index: number): string {
   return `${name}_${index}`;
 }
@@ -109,12 +113,36 @@ function functionDeclaration(tool: AgentToolSchema): JsonValue {
   };
 }
 
+/**
+ * Ids Gemini itself issued — a `functionCall` that carried a real `id`, as opposed
+ * to the synthesized `name_index` fallback. Reconstructed by replaying the same
+ * indexing {@link parseResponse} used: a call whose stored id differs from what
+ * `synthesizeId` would produce for its position was threaded from a real Gemini id,
+ * so it must round-trip on the wire to disambiguate same-name concurrent calls.
+ */
+function geminiRealCallIds(messages: readonly AgentConversationMessage[]): Set<string> {
+  const real = new Set<string>();
+  for (const message of messages) {
+    if (message.role !== 'assistant' || !message.toolCalls) continue;
+    message.toolCalls.forEach((call, index) => {
+      if (call.id !== synthesizeId(call.name, index)) real.add(call.id);
+    });
+  }
+  return real;
+}
+
 /** An assistant turn → a `model` content with a text part (if any) + `functionCall` parts. */
-function modelContent(message: AgentConversationMessage): JsonValue {
+function modelContent(message: AgentConversationMessage, realIds: Set<string>): JsonValue {
   const parts: JsonValue[] = [];
   if (message.content) parts.push({ text: message.content });
   for (const call of message.toolCalls ?? []) {
-    parts.push({ functionCall: { name: call.name, args: (call.input ?? {}) as JsonValue } });
+    const functionCall: Record<string, JsonValue> = {
+      name: call.name,
+      args: (call.input ?? {}) as JsonValue,
+    };
+    // Echo the real per-call id back so it pairs with the functionResponse id below.
+    if (realIds.has(call.id)) functionCall.id = call.id;
+    parts.push({ functionCall });
   }
   return { role: 'model', parts: parts.length > 0 ? parts : [{ text: message.content }] };
 }
@@ -122,6 +150,7 @@ function modelContent(message: AgentConversationMessage): JsonValue {
 /** Serialize the buffer to Gemini contents, merging runs of tool results into one user turn. */
 function geminiContents(messages: readonly AgentConversationMessage[]): JsonValue {
   const names = toolNamesById(messages);
+  const realIds = geminiRealCallIds(messages);
   const out: JsonValue[] = [];
   let pendingResponses: JsonValue[] = [];
   const flush = (): void => {
@@ -133,14 +162,19 @@ function geminiContents(messages: readonly AgentConversationMessage[]): JsonValu
   for (const message of messages) {
     if (message.role === 'tool') {
       const id = message.toolCallId ?? '';
-      pendingResponses.push({
-        functionResponse: { name: names.get(id) ?? id, response: { result: message.content } },
-      });
+      const functionResponse: Record<string, JsonValue> = {
+        name: names.get(id) ?? id,
+        response: { result: message.content },
+      };
+      // Only a real Gemini-issued id disambiguates same-name calls; a synthesized
+      // id was never seen by Gemini, so emitting it would be meaningless.
+      if (realIds.has(id)) functionResponse.id = id;
+      pendingResponses.push({ functionResponse });
       continue;
     }
     flush();
     if (message.role === 'user') out.push({ role: 'user', parts: [{ text: message.content }] });
-    else out.push(modelContent(message));
+    else out.push(modelContent(message, realIds));
   }
   flush();
   return out;
@@ -171,8 +205,11 @@ function parseResponse(data: unknown): AgentModelResult {
     const part = asRecord(raw);
     const fnCall = asRecord(part?.functionCall);
     if (fnCall && typeof fnCall.name === 'string') {
+      // Prefer the real id Gemini sends (parallel same-function disambiguation);
+      // fall back to a synthesized name_index ONLY when the call carried none.
+      const realId = typeof fnCall.id === 'string' && fnCall.id.length > 0 ? fnCall.id : undefined;
       toolCalls.push({
-        id: synthesizeId(fnCall.name, toolCalls.length),
+        id: realId ?? synthesizeId(fnCall.name, toolCalls.length),
         name: fnCall.name,
         input: fnCall.args ?? {},
       });

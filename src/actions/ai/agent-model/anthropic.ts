@@ -59,7 +59,12 @@ function anthropicMessages(messages: readonly AgentConversationMessage[]): JsonV
 function buildBody(req: AgentModelRequest): JsonValue {
   return {
     model: req.model,
-    max_tokens: req.maxTokens ?? 1024,
+    // Anthropic requires max_tokens. An agent turn can emit large tool-call
+    // arguments or a long final answer, and a truncated tool_use block is
+    // malformed JSON that corrupts the loop — so the default is agent-sized
+    // (4096), not the 1024 that a single completion could get away with.
+    // The caller can still raise/lower it via req.maxTokens.
+    max_tokens: req.maxTokens ?? 4096,
     ...(req.system ? { system: req.system } : {}),
     ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
     // Anthropic tolerates an empty `tools` array, but omit it when zero for

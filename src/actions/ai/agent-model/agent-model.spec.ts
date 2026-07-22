@@ -128,6 +128,15 @@ describe('callAgentModel — claude (Anthropic Messages tool use)', () => {
       { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'call_1', content: '15 C' }] },
     ]);
   });
+
+  it('defaults max_tokens to an agent-sized 4096 when the request omits it', async () => {
+    // 1024 can truncate a large tool-call args block or a long final answer mid-output.
+    const { invoke, transport } = run({ content: [{ type: 'text', text: 'ok' }] });
+    const req: AgentModelRequest = { ...multiTurn('claude', 'claude-opus-4-8') };
+    delete req.maxTokens;
+    await invoke(req);
+    expect(body(transport.requests[0]!).max_tokens).toBe(4096);
+  });
 });
 
 // ─── OpenAI (tools + tool_calls) ───
@@ -306,16 +315,30 @@ describe('callAgentModel — gemini (generateContent function calling)', () => {
     expect(out.toolCalls).toEqual([]);
   });
 
-  it('serializes functionDeclarations + the functionCall/functionResponse turns (threaded by name)', async () => {
+  it('serializes functionDeclarations + the functionCall/functionResponse turns (synthesized id → threaded by name, no id)', async () => {
     const { invoke, transport } = run({
       candidates: [{ content: { parts: [{ text: 'ok' }] } }],
     });
-    await invoke(multiTurn('gemini', 'gemini-2.0-flash'));
-    const req = transport.requests[0]!;
-    expect(req.url).toBe(
+    // A buffer whose call id is the synthesized `name_index` — Gemini sent no id,
+    // so results thread by NAME only and no `id` rides the wire.
+    const req: AgentModelRequest = {
+      ...multiTurn('gemini', 'gemini-2.0-flash'),
+      messages: [
+        { role: 'user', content: 'Weather in SF?' },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'get_weather_0', name: 'get_weather', input: { location: 'SF' } }],
+        },
+        { role: 'tool', toolCallId: 'get_weather_0', content: '15 C' },
+      ],
+    };
+    await invoke(req);
+    const request = transport.requests[0]!;
+    expect(request.url).toBe(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
     );
-    const b = body(req);
+    const b = body(request);
     expect(b.tools).toEqual([
       {
         functionDeclarations: [
@@ -339,6 +362,71 @@ describe('callAgentModel — gemini (generateContent function calling)', () => {
       {
         role: 'user',
         parts: [{ functionResponse: { name: 'get_weather', response: { result: '15 C' } } }],
+      },
+    ]);
+  });
+
+  it('preserves a real functionCall id and threads it back on both echoed call + result', async () => {
+    // Two CONCURRENT calls to the SAME function — names collide, so only the id
+    // Gemini returns can map each result to its call. Capture it, don't synthesize.
+    const { invoke } = run({
+      candidates: [
+        {
+          content: {
+            role: 'model',
+            parts: [
+              { functionCall: { id: 'fc_sf', name: 'get_weather', args: { location: 'SF' } } },
+              { functionCall: { id: 'fc_nyc', name: 'get_weather', args: { location: 'NYC' } } },
+            ],
+          },
+        },
+      ],
+    });
+    const parseOut = await invoke(multiTurn('gemini', 'gemini-2.0-flash'));
+    expect(parseOut.toolCalls).toEqual([
+      { id: 'fc_sf', name: 'get_weather', input: { location: 'SF' } },
+      { id: 'fc_nyc', name: 'get_weather', input: { location: 'NYC' } },
+    ]);
+
+    // Now thread both distinct-id results back and assert the id rides both the
+    // model turn's functionCall AND the user turn's functionResponse.
+    const { invoke: invoke2, transport } = run({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] });
+    const req: AgentModelRequest = {
+      provider: 'gemini',
+      model: 'gemini-2.0-flash',
+      system: 'You are helpful.',
+      messages: [
+        { role: 'user', content: 'Weather in SF and NYC?' },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [
+            { id: 'fc_sf', name: 'get_weather', input: { location: 'SF' } },
+            { id: 'fc_nyc', name: 'get_weather', input: { location: 'NYC' } },
+          ],
+        },
+        { role: 'tool', toolCallId: 'fc_sf', content: '15 C' },
+        { role: 'tool', toolCallId: 'fc_nyc', content: '9 C' },
+      ],
+      tools: multiTurn('gemini', 'gemini-2.0-flash').tools,
+    };
+    await invoke2(req);
+    const b = body(transport.requests[0]!);
+    expect(b.contents).toEqual([
+      { role: 'user', parts: [{ text: 'Weather in SF and NYC?' }] },
+      {
+        role: 'model',
+        parts: [
+          { functionCall: { id: 'fc_sf', name: 'get_weather', args: { location: 'SF' } } },
+          { functionCall: { id: 'fc_nyc', name: 'get_weather', args: { location: 'NYC' } } },
+        ],
+      },
+      {
+        role: 'user',
+        parts: [
+          { functionResponse: { id: 'fc_sf', name: 'get_weather', response: { result: '15 C' } } },
+          { functionResponse: { id: 'fc_nyc', name: 'get_weather', response: { result: '9 C' } } },
+        ],
       },
     ]);
   });
