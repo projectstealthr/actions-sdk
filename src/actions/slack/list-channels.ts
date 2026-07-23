@@ -49,7 +49,7 @@ export async function listSlackChannels(
 }
 
 /**
- * A paginated REST read (design §9 shape #1) — proves the cursor pagination
+ * A paginated REST read (ADR 0037/0038 shape #1) — proves the cursor pagination
  * helper against a live API returning real workspace channels.
  */
 export const listChannels = defineAction({

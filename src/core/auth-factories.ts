@@ -4,7 +4,7 @@ import { ComposioProxyTransport } from './http/transport-composio';
 import { DirectTransport } from './http/transport-direct';
 
 /**
- * Runtime seam (design §5): the SDK ships two ways to build the opaque
+ * Runtime seam (ADR 0037/0038): the SDK ships two ways to build the opaque
  * {@link AuthHandle} an action runs on. Which one the runtime picks — BYO/direct
  * or managed via Composio — is invisible to the action.
  */

@@ -2,7 +2,7 @@
 
 Turnkey record of every clean-room action authored beyond the reference set, its
 verification status, and exactly what a human consent-sprint needs to flip it
-from PENDING to VERIFIED. Design law (action-sdk-design §7): **nothing is marked
+from PENDING to VERIFIED. Design law (`workflow-service` ADRs 0037/0038 + `docs/state/actions-and-execution.md`): **nothing is marked
 READY without executing against the live API and returning real data.**
 
 ## How to run a smoke (turnkey)

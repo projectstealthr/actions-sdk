@@ -3,7 +3,7 @@ import { ActionError } from '../../core/errors';
 import { file, shortText } from '../../core/props';
 import { assertSlackOk, SLACK_API_BASE, slackOAuth, type SlackEnvelope } from './common';
 
-/** Public type — the reference FILE-INPUT action (design §10, file rail). */
+/** Public type — the reference FILE-INPUT action (ADR 0037/0038, file rail). */
 export const UPLOAD_FILE_TYPE = 'slack.upload_file';
 
 interface UploadUrlResponse extends SlackEnvelope {

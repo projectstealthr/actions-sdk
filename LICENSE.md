@@ -100,6 +100,6 @@ terms.
 This is a [fair-code](https://faircode.io) license, matching the posture of the
 Orchestr `workflow-service` repository. It is a **placeholder pending a final
 licensing decision** for the Action SDK: because this SDK is framed as the OSS
-independence/integrity layer (see `docs/action-sdk-design.md` §1–§2), a more
+independence/integrity layer (see the Orchestr Actions SDK design — `workflow-service` ADRs 0037/0038), a more
 permissive license (e.g. MIT) may be chosen so the action catalog is trivially
 adoptable and forkable. That decision is intentionally deferred; see the README.

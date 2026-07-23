@@ -4,7 +4,7 @@ import type { FileInput } from '../../core/props';
 import { shortText } from '../../core/props';
 import { assertSlackOk, SLACK_API_BASE, slackOAuth, type SlackEnvelope } from './common';
 
-/** Public type — the reference FILE-OUTPUT action (design §10, file rail). */
+/** Public type — the reference FILE-OUTPUT action (ADR 0037/0038, file rail). */
 export const GET_FILE_TYPE = 'slack.get_file';
 
 interface FilesInfoResponse extends SlackEnvelope {

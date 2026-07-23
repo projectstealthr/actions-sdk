@@ -50,7 +50,7 @@ interface ProxyEnvelope {
 }
 
 /**
- * The managed rail (design §5). Rewrites an action's request into Composio's raw
+ * The managed rail (ADR 0037/0038). Rewrites an action's request into Composio's raw
  * HTTP proxy (`POST /api/v3/tools/execute/proxy`), which attaches the real
  * token server-side — so the SDK holds no provider credential for managed
  * connections. The action's request shape is identical to the direct rail; only
