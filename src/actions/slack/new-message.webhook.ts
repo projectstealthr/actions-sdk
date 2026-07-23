@@ -33,7 +33,7 @@ interface SlackEventEnvelope {
 }
 
 /**
- * A webhook trigger (design §9 shape #3) proving the trigger contract:
+ * A webhook trigger (ADR 0037/0038 shape #3) proving the trigger contract:
  * verification handshake, signature check, payload → normalised events, and
  * retry dedup. Slack's Events subscription URL is configured at the app level,
  * so there is no per-connection registration API — `onEnable/onDisable` are

@@ -8,7 +8,7 @@ import { newChannel } from './new-channel.polling';
 import { sendChannelMessage } from './send-channel-message';
 
 /**
- * LIVE smoke tests (design §7): every reference action runs against the real
+ * LIVE smoke tests (ADR 0037/0038): every reference action runs against the real
  * Slack workspace through the Composio managed proxy and returns real data.
  * Gated behind ORCHESTR_LIVE + COMPOSIO_API_KEY; self-skips otherwise. Runs only
  * read-only calls plus (opt-in) one benign write to SLACK_TEST_CHANNEL_ID.

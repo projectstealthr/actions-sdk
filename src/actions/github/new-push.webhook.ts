@@ -44,7 +44,7 @@ interface GithubHook {
 }
 
 /**
- * A REGISTERED webhook trigger (design §9 — the register-per-connection shape
+ * A REGISTERED webhook trigger (ADR 0037/0038 — the register-per-connection shape
  * Slack couldn't exercise): `onEnable` creates a real repo webhook via the
  * GitHub API pointing at our public intake URL and signed with the runtime's
  * per-trigger secret, then returns the hook id as the {@link WebhookRegistration}

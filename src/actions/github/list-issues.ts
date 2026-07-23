@@ -46,7 +46,7 @@ export interface GithubIssue {
 }
 
 /**
- * A paginated REST read (design §9 shape #1, second variant): GitHub paginates
+ * A paginated REST read (ADR 0037/0038 shape #1, second variant): GitHub paginates
  * via the `Link` header (`rel="next"`), a different shape from Slack's body
  * cursor — so this action exercises the second pagination strategy AND the
  * direct transport with a non-OAuth scheme in one go.

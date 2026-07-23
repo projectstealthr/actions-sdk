@@ -1,7 +1,7 @@
 /**
  * The clean-room reference catalog + the ported app catalog.
  *
- * Reference shapes (design §9) — one of each hard framework case:
+ * Reference shapes (ADR 0037/0038) — one of each hard framework case:
  *  - slack.send_channel_message — dynamic dropdown (live picker), managed rail
  *  - slack.list_channels        — cursor pagination, managed rail
  *  - github.list_issues         — Link-header pagination, direct rail, apiKey scheme

@@ -2,7 +2,7 @@ import type { AuthScheme } from './auth';
 import type { AnyPropSchema, DropdownOption, PropsSchema } from './props';
 
 /**
- * Serialisation to the platform's existing catalog shape (design §6). The client
+ * Serialisation to the platform's existing catalog shape (ADR 0037/0038). The client
  * inspector renders props by an UPPERCASE `type` (SHORT_TEXT, DROPDOWN, …);
  * mapping our schemas onto those tags means an action "silently upgrades" into
  * the platform catalog with no client change. Dynamic dropdowns emit no static

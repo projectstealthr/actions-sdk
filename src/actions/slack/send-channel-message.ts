@@ -3,7 +3,7 @@ import { checkbox, dropdown, longText, shortText } from '../../core/props';
 import { assertSlackOk, SLACK_API_BASE, slackOAuth, type SlackEnvelope } from './common';
 import { listSlackChannels } from './list-channels';
 
-/** Public type — the canonical reference action (design §10). */
+/** Public type — the canonical reference action (ADR 0037/0038). */
 export const SEND_CHANNEL_MESSAGE_TYPE = 'slack.send_channel_message';
 
 export interface PostMessageResponse extends SlackEnvelope {
@@ -13,7 +13,7 @@ export interface PostMessageResponse extends SlackEnvelope {
 }
 
 /**
- * The canonical reference action (design §4, §10): post a message to a channel,
+ * The canonical reference action (ADR 0037/0038): post a message to a channel,
  * with the differentiator — a **live-fetched channel picker** instead of a
  * pasted channel ID. Proves the action contract, the dynamic dropdown loader,
  * and the auth seam end to end.

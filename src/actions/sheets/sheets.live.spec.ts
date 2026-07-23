@@ -8,7 +8,7 @@ import { createSpreadsheet, listSheets } from './tabs';
 
 /**
  * LIVE smoke tests for Google Sheets via the Composio managed proxy — the rail
- * that fixes the managed-Google defect (design §7). Fully self-contained: it
+ * that fixes the managed-Google defect (ADR 0037/0038). Fully self-contained: it
  * creates a throwaway spreadsheet, writes/reads/updates/clears it, then lists its
  * tabs and exercises the Drive-backed spreadsheet picker. Gated behind
  * ORCHESTR_LIVE + COMPOSIO_API_KEY; self-skips otherwise.

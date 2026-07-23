@@ -1,6 +1,6 @@
 # Framework notes — hard cases surfaced by the first five reference shapes
 
-Purpose (design §9): the whole point of hand-building five deliberately different-shaped
+Purpose (ADR 0037/0038): the whole point of hand-building five deliberately different-shaped
 actions/triggers before scaling is to make the framework's hard cases show up *now*, while a
 breaking change is cheap. This is that log — every non-obvious case the shapes surfaced, how the
 SDK handled it, and what's still open. It is the signal for "is the shape ready to mass-produce

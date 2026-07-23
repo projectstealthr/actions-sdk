@@ -7,7 +7,7 @@ import { createEvent, deleteEvent, getEvent, listEvents, updateEvent } from './e
 
 /**
  * LIVE smoke tests for Google Calendar via the Composio managed proxy — the rail
- * that fixes the managed-Google defect (design §7). Gated behind ORCHESTR_LIVE +
+ * that fixes the managed-Google defect (ADR 0037/0038). Gated behind ORCHESTR_LIVE +
  * COMPOSIO_API_KEY, and additionally requires a connected account id
  * (GOOGLECALENDAR_CONNECTED_ACCOUNT_ID) — there is NO calendar connection on the
  * shared account yet, so this self-skips until one is created (verification

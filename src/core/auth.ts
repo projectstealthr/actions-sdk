@@ -2,7 +2,7 @@ import { ActionError } from './errors';
 import type { NormalizedRequest, Transport } from './http/types';
 
 /**
- * The auth seam (design §5).
+ * The auth seam (ADR 0037/0038).
  *
  * An action declares an {@link AuthScheme} — *how* this app authenticates, for
  * the connect UI and the catalog. At run time it is handed an opaque

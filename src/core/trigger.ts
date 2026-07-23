@@ -6,7 +6,7 @@ import type { JsonValue } from './http/types';
 import { parseProps, type PropsSchema, type PropsValue } from './props';
 
 /**
- * Triggers — the second core primitive (design §4). Two strategies share one
+ * Triggers — the second core primitive (ADR 0037/0038). Two strategies share one
  * contract surface:
  *  - polling: the runtime calls `poll` on a schedule; the SDK dedupes by a
  *    stable key and tracks the last-polled watermark in a {@link TriggerStore}.

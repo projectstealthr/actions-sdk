@@ -4,7 +4,7 @@ import { composioApiKey, DEFAULT_SLACK_ACCOUNT } from './live';
 
 /**
  * Test harness: build a Composio-backed {@link AuthHandle} for live smoke tests
- * (design §7 — actions run against the real API through a managed connection).
+ * (ADR 0037/0038 — actions run against the real API through a managed connection).
  * Reads `COMPOSIO_API_KEY` from the environment; the connected-account id
  * defaults to the shared Slack fixture but can be overridden.
  */

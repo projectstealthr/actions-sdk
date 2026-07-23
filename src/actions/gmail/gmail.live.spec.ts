@@ -8,7 +8,7 @@ import { findEmail, getProfile, listMessages, sendEmail } from './messages';
 /**
  * LIVE smoke tests for Gmail via the Composio managed proxy. Gmail is a connected
  * account on the shared Composio account, so these run against a real mailbox and
- * return real data (design §7). Gated behind ORCHESTR_LIVE + COMPOSIO_API_KEY;
+ * return real data (ADR 0037/0038). Gated behind ORCHESTR_LIVE + COMPOSIO_API_KEY;
  * self-skips otherwise. Read-only — no email is sent.
  */
 const GMAIL_ACCOUNT = process.env.GMAIL_CONNECTED_ACCOUNT_ID ?? 'ca_p-UFh0PsCUvv';

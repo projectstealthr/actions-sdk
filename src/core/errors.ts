@@ -6,7 +6,7 @@
  * normalised to this single object. Callers (the runtime, the client
  * inspector, a retry loop) branch on `retryable` and show `message`; they never
  * have to know which layer failed. This is the contract in
- * `docs/action-sdk-design.md` §4: "every failure → one shape
+ * `workflow-service` ADR 0037/0038 (`docs/state/actions-and-execution.md`) §4: "every failure → one shape
  * `{ status, message, retryable }`".
  */
 export interface NormalizedFailure {

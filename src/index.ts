@@ -1,7 +1,7 @@
 /**
  * Orchestr Action SDK — public API.
  *
- * Clean-room, transport-agnostic actions & triggers. See `docs/action-sdk-design.md`
+ * Clean-room, transport-agnostic actions & triggers. See `workflow-service` ADRs 0037/0038 + `docs/state/actions-and-execution.md`
  * for the reasoning; `docs/FRAMEWORK-NOTES.md` for the hard cases the reference
  * actions surfaced. `createAuthHandle`/`transportOf` are intentionally NOT
  * exported — the transport stays unreachable from action code (the auth seam).

@@ -3,7 +3,7 @@
 Clean-room, transport-agnostic **actions & triggers** for the Orchestr automation platform.
 
 This repo is the SDK skeleton and the first hand-built reference actions described in
-`workflow-service/docs/action-sdk-design.md`. The goal of this first cut is to **de-risk the
+the Orchestr Actions SDK design (`workflow-service` ADRs 0037/0038 + `docs/state/actions-and-execution.md`). The goal of this first cut is to **de-risk the
 framework** — nail the action contract, the auth seam, and the `http` client on a handful of
 deliberately different-shaped actions before scaling the catalog.
 
@@ -12,17 +12,17 @@ deliberately different-shaped actions before scaling the catalog.
 **Is:** a standalone package that defines an action/trigger contract and a small runtime
 (`http` client, prop schemas, auth seam) plus a growing catalog of clean-room actions. It is
 designed to plug into the platform's existing action-provider seam and take over
-app-by-app (design §2, §6).
+app-by-app (ADR 0037/0038).
 
 **Is not:** the moat. It never touches versioning/branching, the orchestration runtime,
 AI-authored config, or the MCP surface. The action library is the *hands*; the moat is the
-*nervous system* (design §2).
+*nervous system* (ADR 0037/0038).
 
 ## Clean-room mandate
 
 Every action here is **our own code**. Each provider's public API docs and the Composio tool
 schemas were read **only as spec** — which endpoint, which inputs, which output shape. Ideas and
-interfaces aren't copyrightable; the specific expression is ours (design §1). No third-party
+interfaces aren't copyrightable; the specific expression is ours (ADR 0037/0038). No third-party
 source was copied.
 
 ## License
@@ -48,7 +48,7 @@ Four primitives, each doing one job (see `src/`):
   async `options({ auth, http })` loaders — the config differentiator), `multiSelect`, `json`,
   `file`, `dateTime`. Fully typed: `props` inside `run` is inferred with no `any`. Serialise to
   the platform's UPPERCASE catalog tags via `toManifestEntry` so an action "silently upgrades"
-  into the platform catalog (design §6).
+  into the platform catalog (ADR 0037/0038).
 - **The `http` client** — the real engineering. Auth injection via a pluggable transport,
   pagination helpers (cursor-in-body **and** Link-header), retry-with-backoff that respects
   `Retry-After` and idempotency, per-request timeouts, and **error normalisation**: every failure
@@ -56,7 +56,7 @@ Four primitives, each doing one job (see `src/`):
 - **The auth seam** — an action declares an `AuthScheme` and reads an **opaque `AuthHandle`**. The
   handle carries the resolved transport behind a private symbol; action code can never read the
   credential or learn its source. The same action runs **BYO/direct** (self-host) or **managed via
-  Composio** with zero branching (design §5).
+  Composio** with zero branching (ADR 0037/0038).
 
 ```ts
 import { defineAction, dropdown, longText } from 'orchestr-actions-sdk';
@@ -90,7 +90,7 @@ export const sendChannelMessage = defineAction({
 
 ## Reference catalog (the de-risking set)
 
-Five deliberately different shapes (design §9), each live-tested against a real API:
+Five deliberately different shapes (ADR 0037/0038), each live-tested against a real API:
 
 | Type | Shape it proves | Rail / auth | Live status |
 |---|---|---|---|

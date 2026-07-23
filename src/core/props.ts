@@ -6,7 +6,7 @@ import type { JsonValue } from './http/types';
 /**
  * Typed prop schemas — the config surface the client renders and the runtime
  * validates. Each kind is a plain data object plus (for dropdowns) an async
- * `options` loader: the differentiator (design §4) that turns "paste an ID" into
+ * `options` loader: the differentiator (ADR 0037/0038) that turns "paste an ID" into
  * a live-fetched picker. Value types flow through generics so `props` inside
  * `run` is fully typed with no `any`.
  */

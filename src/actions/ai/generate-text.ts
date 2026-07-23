@@ -5,7 +5,7 @@ import type { JsonValue } from '../../core/http/types';
 import { checkbox, dropdown, longText, number } from '../../core/props';
 
 /**
- * The clean-room "generate text" family (design §9): one prompt-in / text-out
+ * The clean-room "generate text" family (ADR 0037/0038): one prompt-in / text-out
  * action per LLM provider, all built from a SINGLE {@link makeGenerateText}
  * factory. Every provider ships the identical config surface (prompt, system,
  * model, temperature, max tokens, JSON output); the factory owns the shared
