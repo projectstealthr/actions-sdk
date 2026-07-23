@@ -1,6 +1,6 @@
 import { defineAction } from '../../core/action';
 import { ActionError } from '../../core/errors';
-import { assertPublicUrl, ssrfAllowedHostsFromEnv } from '../../core/http/ssrf';
+import { guardUserUrl } from '../../core/http/ssrf';
 import type { HttpMethod, JsonValue, QueryValue } from '../../core/http/types';
 import { checkbox, dropdown, json, shortText } from '../../core/props';
 
@@ -86,7 +86,7 @@ export const sendRequest = defineAction({
     // SSRF guard: this URL is fully user-controlled and rides the no-auth direct
     // transport, so a workflow could otherwise reach internal services or cloud
     // metadata. Public destinations pass; operators opt internal hosts back in.
-    await assertPublicUrl(props.url, { allowedHosts: ssrfAllowedHostsFromEnv() });
+    await guardUserUrl(props.url);
     const res = await http.request(method, props.url, {
       auth,
       headers: toHeaderRecord(props.headers),

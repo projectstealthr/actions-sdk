@@ -1,4 +1,5 @@
 import { defineTrigger } from '../../core/trigger';
+import { guardUserUrl } from '../../core/http/ssrf';
 import { shortText } from '../../core/props';
 import { type FeedItem, parseFeed } from './feed';
 
@@ -23,6 +24,9 @@ export const newItem = defineTrigger({
     url: shortText({ label: 'Feed URL', required: true }),
   },
   async poll({ auth, props, http }): Promise<FeedItem[]> {
+    // SSRF guard: the feed URL is fully user-controlled on the no-auth direct
+    // transport — block private/internal/cloud-metadata targets before we fetch.
+    await guardUserUrl(props.url);
     const res = await http.get<unknown>(props.url, { auth });
     const xml = typeof res.data === 'string' ? res.data : '';
     return parseFeed(xml);
