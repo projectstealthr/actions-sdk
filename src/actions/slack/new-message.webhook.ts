@@ -38,6 +38,12 @@ interface SlackEventEnvelope {
  * retry dedup. Slack's Events subscription URL is configured at the app level,
  * so there is no per-connection registration API — `onEnable/onDisable` are
  * intentionally omitted (see docs/FRAMEWORK-NOTES.md).
+ *
+ * App-level webhook (Slack Events) — NOT wired service-side yet (needs an
+ * app-level-webhook intake: url_verification handshake + app-level signing secret +
+ * event→workflow routing). It is therefore excluded from the shipped catalog
+ * (`catalogTriggers` in src/actions/index.ts) until that rail exists; this
+ * definition is kept ready (and stays in `referenceTriggers` for reference/live tests).
  */
 export const newMessage = defineTrigger({
   type: NEW_MESSAGE_TYPE,

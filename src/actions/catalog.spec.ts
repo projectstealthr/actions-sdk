@@ -112,13 +112,19 @@ describe('SDK polling-trigger catalog projection', () => {
     }
   });
 
-  it('catalogTriggers unions the webhook + polling triggers with unique types', () => {
+  it('catalogTriggers unions the shipped webhook + polling triggers with unique types', () => {
     const types = catalogTriggers.map((t) => t.type);
     expect(new Set(types).size).toBe(types.length);
     // Webhook reference triggers are present alongside the polling ones.
     expect(types).toContain('github.new_push');
-    expect(types).toContain('slack.new_message');
-    for (const trigger of referenceTriggers) expect(catalogTriggers).toContain(trigger);
+    // slack.new_message is an app-level webhook (Slack Events) with no service-side
+    // intake rail yet, so it is deliberately excluded from the shipped catalog even
+    // though its definition still ships in referenceTriggers (see src/actions/index.ts).
+    expect(types).not.toContain('slack.new_message');
+    for (const trigger of referenceTriggers) {
+      if (trigger.type === 'slack.new_message') continue; // deliberately unshipped (see above)
+      expect(catalogTriggers).toContain(trigger);
+    }
     for (const trigger of pollingTriggers) expect(types).toContain(trigger.type);
   });
 });
