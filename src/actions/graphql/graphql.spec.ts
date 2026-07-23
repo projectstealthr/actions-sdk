@@ -38,6 +38,17 @@ describe('graphql.send_request', () => {
     expect(out.data).toBeNull();
   });
 
+  it('blocks a request to a private/internal endpoint before it is sent (SSRF guard)', async () => {
+    const transport = new FakeTransport(() => ({ status: 200, headers: {}, data: {} }));
+    await expect(
+      sendRequest.execute({
+        auth: stubAuth(transport),
+        props: { url: 'http://10.0.0.5/graphql', query: '{ x }' },
+      }),
+    ).rejects.toMatchObject({ code: 'ssrf_blocked' });
+    expect(transport.requests).toHaveLength(0); // guard fired before any post
+  });
+
   it('exposes one action, graphql.* typed', () => {
     expect(graphqlActions).toHaveLength(1);
     for (const action of graphqlActions) expect(action.type.startsWith('graphql.')).toBe(true);

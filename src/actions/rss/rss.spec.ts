@@ -87,4 +87,13 @@ describe('rss.new_item polling trigger', () => {
     });
     expect(third.events.map((i) => i.id)).toEqual(['guid-3']);
   });
+
+  it('blocks polling a private/internal feed URL before any fetch (SSRF guard)', async () => {
+    const store = new MemoryStore();
+    const transport = new FakeTransport(() => feedResponse(RSS_SAMPLE));
+    await expect(
+      newItem.runPoll({ auth: stubAuth(transport), props: { url: 'http://192.168.1.10/feed.xml' }, store }),
+    ).rejects.toMatchObject({ code: 'ssrf_blocked' });
+    expect(transport.requests).toHaveLength(0); // guard fired before any fetch
+  });
 });

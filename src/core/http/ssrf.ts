@@ -120,3 +120,16 @@ export async function assertPublicUrl(rawUrl: string, opts: { allowedHosts?: str
     }
   }
 }
+
+/**
+ * The one guard every fully user-controlled outbound URL goes through — the no-auth
+ * `http.send_request`/`graphql.send_request` actions and the `http`/`rss` polling
+ * triggers. It fixes the guard options in a single place (env host allowlist opt-in)
+ * so a new user-URL boundary can't drift from the others or forget to pass them.
+ * Residuals are exactly `assertPublicUrl`'s: an unresolvable host passes (a name with
+ * no address reaches no internal service) and redirect targets / DNS rebinding are
+ * not re-validated (connection-level pinning is the documented follow-up).
+ */
+export async function guardUserUrl(url: string): Promise<void> {
+  await assertPublicUrl(url, { allowedHosts: ssrfAllowedHostsFromEnv() });
+}
