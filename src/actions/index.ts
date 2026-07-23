@@ -201,15 +201,16 @@ export const appWebhookTriggers = [
   clickupNewTask,
 ] as const;
 
-/** Every trigger the SDK ships — webhook + polling — for a unified catalog build. */
-export const catalogTriggers = [
-  newMessage,
-  newPush,
-  newIssue,
-  newPullRequest,
-  ...appWebhookTriggers,
-  ...pollingTriggers,
-];
+/**
+ * Every trigger the SDK actually ships — webhook + polling — for a unified catalog
+ * build. `slack.new_message` is deliberately excluded: it is an app-level webhook
+ * (Slack Events) — NOT wired service-side yet (needs an app-level-webhook intake:
+ * url_verification handshake + app-level signing secret + event→workflow routing),
+ * so advertising/registering it would ship an unreachable trigger. Its definition is
+ * kept ready in {@link referenceTriggers} (reference/live-test use) until that rail
+ * exists.
+ */
+export const catalogTriggers = [newPush, newIssue, newPullRequest, ...appWebhookTriggers, ...pollingTriggers];
 
 /**
  * The full clean-room catalog — every app's actions, flattened for catalog
