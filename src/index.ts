@@ -74,6 +74,11 @@ export {
   type PaginateOptions,
 } from './core/http/pagination';
 export { backoffDelay, DEFAULT_RETRY_POLICY, parseRetryAfter, type RetryPolicy } from './core/http/retry';
+// SSRF guard for user-controlled outbound URLs — the single choke point every
+// fully user-supplied URL boundary goes through (host allowlist honored). The
+// service reuses `guardUserUrl` for its BYO-OAuth token endpoint (store-time +
+// runtime), so the boundary can't drift from the SDK's own action/trigger sinks.
+export { assertPublicUrl, guardUserUrl, isBlockedIp, ssrfAllowedHostsFromEnv } from './core/http/ssrf';
 
 // Props — typed prop kinds + boundary validation.
 export {
